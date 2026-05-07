@@ -99,3 +99,51 @@ export const adviceSchema = z.object({
   prompt: z.string().trim().min(8).max(12000),
   context: z.string().trim().max(40000).optional(),
 });
+
+export const planSuggestionRequestSchema = z.object({
+  workspaceId: z.string().uuid(),
+  growthPlanId: z.string().uuid(),
+});
+
+export const planSuggestionApproveSchema = z.object({
+  workspaceId: z.string().uuid(),
+  growthPlanId: z.string().uuid(),
+  briefId: z.string().uuid().optional().nullable(),
+  targets: z
+    .array(
+      z.object({
+        label: z.string().trim().min(2).max(160),
+        metricKey: z.string().trim().max(80).optional(),
+        targetValue: z.coerce.number().min(0),
+        notes: z.string().trim().max(1200).optional(),
+      })
+    )
+    .max(5)
+    .default([]),
+  milestones: z
+    .array(
+      z.object({
+        title: z.string().trim().min(2).max(180),
+        description: z.string().trim().max(1200).optional(),
+        ownerName: z.string().trim().max(120).optional(),
+      })
+    )
+    .max(5)
+    .default([]),
+  tasks: z
+    .array(
+      z.object({
+        title: z.string().trim().min(2).max(180),
+        lane: z
+          .enum(["founder", "marketing", "sales", "investor", "ops", "content", "growth"])
+          .default("growth"),
+        assigneeName: z.string().trim().max(120).optional(),
+        priority: z.enum(["low", "medium", "high", "urgent"]).default("medium"),
+        notes: z.string().trim().max(1200).optional(),
+      })
+    )
+    .max(12)
+    .default([]),
+}).refine((data) => data.targets.length + data.milestones.length + data.tasks.length > 0, {
+  message: "Approve at least one AI suggestion before saving.",
+});

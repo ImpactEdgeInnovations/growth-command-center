@@ -60,8 +60,9 @@ AI cannot:
 2. File uploads are stored privately in the Growth Command Center Supabase storage bucket.
 3. Text is extracted from `.md`, `.markdown`, and `.txt` files in the safe MVP phase.
 4. AI summarizes the plan.
-5. User reviews proposed targets/tasks.
-6. User clicks approve to save them.
+5. AI can draft targets, milestones, and team tasks from the saved plan.
+6. User reviews proposed targets/tasks and deselects anything they do not want.
+7. User clicks approve to save selected items.
 
 PDF/DOCX extraction is intentionally queued as a later phase so the first upload release stays lightweight and does not introduce a heavy document-processing runtime.
 

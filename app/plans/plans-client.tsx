@@ -3,8 +3,37 @@
 import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import { button, card, input, label, muted, secondaryButton } from "../ui/styles";
 
+type SavedPlan = {
+  id: string;
+  title: string;
+  status?: string;
+  ai_status?: string;
+  source_type?: string;
+};
+
+type PlanSuggestions = {
+  summary: string;
+  targets: Array<{ label: string; metricKey?: string; targetValue: number; notes?: string }>;
+  milestones: Array<{ title: string; description?: string; ownerName?: string }>;
+  tasks: Array<{ title: string; lane: string; assigneeName?: string; priority: string; notes?: string }>;
+};
+
+type SuggestionSelection = {
+  targets: boolean[];
+  milestones: boolean[];
+  tasks: boolean[];
+};
+
+const checkedAll = (suggestions: PlanSuggestions): SuggestionSelection => ({
+  targets: suggestions.targets.map(() => true),
+  milestones: suggestions.milestones.map(() => true),
+  tasks: suggestions.tasks.map(() => true),
+});
+
 export default function PlansClient() {
   const [workspaceId, setWorkspaceId] = useState("");
+  const [plans, setPlans] = useState<SavedPlan[]>([]);
+  const [selectedPlanId, setSelectedPlanId] = useState("");
   const [title, setTitle] = useState("");
   const [text, setText] = useState("");
   const [uploadTitle, setUploadTitle] = useState("");
@@ -13,13 +42,27 @@ export default function PlansClient() {
   const [targetValue, setTargetValue] = useState("");
   const [milestoneTitle, setMilestoneTitle] = useState("");
   const [message, setMessage] = useState("");
-  const [busy, setBusy] = useState<"plan" | "upload" | "target" | "milestone" | null>(null);
+  const [suggestions, setSuggestions] = useState<PlanSuggestions | null>(null);
+  const [selection, setSelection] = useState<SuggestionSelection>({ targets: [], milestones: [], tasks: [] });
+  const [briefId, setBriefId] = useState("");
+  const [suggestionModel, setSuggestionModel] = useState("");
+  const [busy, setBusy] = useState<"plan" | "upload" | "target" | "milestone" | "suggest" | "approve" | null>(null);
 
-  useEffect(() => {
+  const loadWorkspace = () => {
     fetch("/api/workspace/summary", { cache: "no-store" })
       .then((response) => response.json())
-      .then((payload) => setWorkspaceId(payload.workspace?.id || ""))
+      .then((payload) => {
+        const nextWorkspaceId = payload.workspace?.id || "";
+        const nextPlans = payload.recent?.plans || [];
+        setWorkspaceId(nextWorkspaceId);
+        setPlans(nextPlans);
+        setSelectedPlanId((current) => current || nextPlans[0]?.id || "");
+      })
       .catch(() => undefined);
+  };
+
+  useEffect(() => {
+    loadWorkspace();
   }, []);
 
   const savePlan = async (event: FormEvent<HTMLFormElement>) => {
@@ -29,8 +72,9 @@ export default function PlansClient() {
       const response = await fetch("/api/workspace/plans", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ workspaceId, title, extractedText: text, sourceType: "manual" }) });
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(payload.error || "Could not save plan.");
-      setMessage("Growth plan saved. Next: ask AI to summarize or convert it into tasks.");
+      setMessage("Growth plan saved. Next: generate AI suggestions and approve only what you want to create.");
       setTitle(""); setText("");
+      loadWorkspace();
     } catch (err: any) { setMessage(err.message || "Could not save plan."); }
     finally { setBusy(null); }
   };
@@ -54,11 +98,68 @@ export default function PlansClient() {
       const response = await fetch("/api/workspace/plans/upload", { method: "POST", body: formData });
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(payload.error || "Could not upload plan.");
-      setMessage("Plan uploaded privately and text extracted. Next: use AI Advisor to summarize it.");
+      setMessage("Plan uploaded privately and text extracted. Next: generate draft targets and tasks.");
       setUploadTitle("");
       setUploadFile(null);
       event.currentTarget.reset();
+      loadWorkspace();
     } catch (err: any) { setMessage(err.message || "Could not upload plan."); }
+    finally { setBusy(null); }
+  };
+
+  const generateSuggestions = async () => {
+    if (!selectedPlanId) {
+      setMessage("Save or upload a plan first, then choose it for AI suggestions.");
+      return;
+    }
+    setBusy("suggest"); setMessage(""); setSuggestions(null);
+    try {
+      const response = await fetch("/api/ai/plan-suggestions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ workspaceId, growthPlanId: selectedPlanId }),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.error || "Could not generate AI suggestions.");
+      setSuggestions(payload.suggestions);
+      setSelection(checkedAll(payload.suggestions));
+      setBriefId(payload.brief?.id || "");
+      setSuggestionModel(payload.model || "");
+      setMessage("AI suggestions are ready. Review them first; nothing is saved until you approve.");
+      loadWorkspace();
+    } catch (err: any) { setMessage(err.message || "Could not generate AI suggestions."); }
+    finally { setBusy(null); }
+  };
+
+  const toggleSuggestion = (section: keyof SuggestionSelection, index: number) => {
+    setSelection((current) => ({
+      ...current,
+      [section]: current[section].map((checked, itemIndex) => (itemIndex === index ? !checked : checked)),
+    }));
+  };
+
+  const approveSuggestions = async () => {
+    if (!suggestions) return;
+    setBusy("approve"); setMessage("");
+    const approved = {
+      targets: suggestions.targets.filter((_, index) => selection.targets[index]),
+      milestones: suggestions.milestones.filter((_, index) => selection.milestones[index]),
+      tasks: suggestions.tasks.filter((_, index) => selection.tasks[index]),
+    };
+    try {
+      const response = await fetch("/api/ai/plan-suggestions/approve", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ workspaceId, growthPlanId: selectedPlanId, briefId: briefId || null, ...approved }),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.error || "Could not approve suggestions.");
+      setMessage(`Approved and saved: ${payload.saved?.targets?.length || 0} targets, ${payload.saved?.milestones?.length || 0} milestones, ${payload.saved?.tasks?.length || 0} tasks.`);
+      setSuggestions(null);
+      setBriefId("");
+      setSuggestionModel("");
+      loadWorkspace();
+    } catch (err: any) { setMessage(err.message || "Could not approve suggestions."); }
     finally { setBusy(null); }
   };
 
@@ -69,6 +170,7 @@ export default function PlansClient() {
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(payload.error || "Could not save target.");
       setMessage("Target saved."); setTargetLabel(""); setTargetValue("");
+      loadWorkspace();
     } catch (err: any) { setMessage(err.message || "Could not save target."); }
     finally { setBusy(null); }
   };
@@ -80,6 +182,7 @@ export default function PlansClient() {
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(payload.error || "Could not save milestone.");
       setMessage("Milestone saved."); setMilestoneTitle("");
+      loadWorkspace();
     } catch (err: any) { setMessage(err.message || "Could not save milestone."); }
     finally { setBusy(null); }
   };
@@ -88,6 +191,7 @@ export default function PlansClient() {
     <div style={{ display: "grid", gap: 18 }}>
       {!workspaceId ? <div style={card}>Login to an approved workspace before saving plans.</div> : null}
       {message ? <div style={card}>{message}</div> : null}
+
       <section style={{ display: "grid", gap: 16, gridTemplateColumns: "repeat(auto-fit,minmax(300px,1fr))" }}>
         <form onSubmit={uploadPlan} style={card}>
           <div style={{ color: "var(--gcc-blue)", fontSize: 12, fontWeight: 900, letterSpacing: ".18em", textTransform: "uppercase" }}>Private upload</div>
@@ -98,7 +202,7 @@ export default function PlansClient() {
             Plan file
             <input required accept=".md,.markdown,.txt,text/plain,text/markdown" style={input} type="file" onChange={onFileChange} />
           </label>
-          <p style={{ ...muted, fontSize: 13 }}>Supported now: .md, .markdown, .txt up to 2MB. PDF/DOCX extraction is intentionally queued for the next safe phase.</p>
+          <p style={{ ...muted, fontSize: 13 }}>Supported now: .md, .markdown, .txt up to 2MB. PDF/DOCX extraction is queued for the next safe phase.</p>
           <button disabled={!!busy || !workspaceId} style={{ ...button, marginTop: 10 }}>{busy === "upload" ? "Uploading..." : "Upload privately"}</button>
         </form>
         <form onSubmit={savePlan} style={card}>
@@ -110,6 +214,43 @@ export default function PlansClient() {
           <button disabled={!!busy || !workspaceId} style={{ ...button, marginTop: 16 }}>{busy === "plan" ? "Saving..." : "Save pasted plan"}</button>
         </form>
       </section>
+
+      <section style={{ ...card, borderColor: "rgba(20,121,184,.18)", background: "linear-gradient(135deg,#ffffff,#eef9ff)" }}>
+        <div style={{ color: "var(--gcc-blue)", fontSize: 12, fontWeight: 900, letterSpacing: ".18em", textTransform: "uppercase" }}>Human-approved AI</div>
+        <h2 style={{ color: "var(--gcc-navy)", marginBottom: 8, marginTop: 8 }}>Convert a saved plan into draft targets and tasks</h2>
+        <p style={muted}>AI prepares the first draft. You choose what to approve before anything becomes a real target, milestone, or task.</p>
+        <div style={{ display: "grid", gap: 12, gridTemplateColumns: "minmax(220px,1fr) auto", alignItems: "end" }}>
+          <label style={label}>
+            Saved plan
+            <select style={input} value={selectedPlanId} onChange={(event) => setSelectedPlanId(event.target.value)}>
+              <option value="">Choose a saved plan</option>
+              {plans.map((plan) => (
+                <option key={plan.id} value={plan.id}>{plan.title} · {plan.ai_status || plan.status || "draft"}</option>
+              ))}
+            </select>
+          </label>
+          <button type="button" disabled={!!busy || !workspaceId || !selectedPlanId} onClick={generateSuggestions} style={button}>
+            {busy === "suggest" ? "Drafting..." : "Generate draft"}
+          </button>
+        </div>
+
+        {suggestions ? (
+          <div style={{ display: "grid", gap: 14, marginTop: 18 }}>
+            <div style={{ ...card, boxShadow: "none" }}>
+              <strong style={{ color: "var(--gcc-navy)" }}>AI summary</strong>
+              <p style={{ ...muted, marginBottom: 0 }}>{suggestions.summary}</p>
+              {suggestionModel ? <p style={{ ...muted, fontSize: 12 }}>Model: {suggestionModel} · human approval required</p> : null}
+            </div>
+            <SuggestionList title="Targets" items={suggestions.targets} selected={selection.targets} onToggle={(index) => toggleSuggestion("targets", index)} render={(item) => `${item.label} · target ${item.targetValue}${item.notes ? ` · ${item.notes}` : ""}`} />
+            <SuggestionList title="Milestones" items={suggestions.milestones} selected={selection.milestones} onToggle={(index) => toggleSuggestion("milestones", index)} render={(item) => `${item.title}${item.description ? ` · ${item.description}` : ""}`} />
+            <SuggestionList title="Team tasks" items={suggestions.tasks} selected={selection.tasks} onToggle={(index) => toggleSuggestion("tasks", index)} render={(item) => `${item.title} · ${item.lane} · ${item.priority}${item.notes ? ` · ${item.notes}` : ""}`} />
+            <button type="button" disabled={busy === "approve"} onClick={approveSuggestions} style={{ ...button, justifySelf: "start" }}>
+              {busy === "approve" ? "Saving approved items..." : "Approve selected items"}
+            </button>
+          </div>
+        ) : null}
+      </section>
+
       <section style={{ display: "grid", gap: 16, gridTemplateColumns: "repeat(auto-fit,minmax(280px,1fr))" }}>
         <div style={card}>
           <h3 style={{ color: "var(--gcc-navy)", marginTop: 0 }}>Set a target</h3>
@@ -123,6 +264,35 @@ export default function PlansClient() {
           <button disabled={!!busy || !workspaceId} onClick={saveMilestone} style={{ ...secondaryButton, marginTop: 14 }}>{busy === "milestone" ? "Saving..." : "Save milestone"}</button>
         </div>
       </section>
+    </div>
+  );
+}
+
+function SuggestionList<T>({
+  title,
+  items,
+  selected,
+  onToggle,
+  render,
+}: {
+  title: string;
+  items: T[];
+  selected: boolean[];
+  onToggle: (index: number) => void;
+  render: (item: T) => string;
+}) {
+  if (items.length === 0) return null;
+  return (
+    <div style={{ ...card, boxShadow: "none" }}>
+      <strong style={{ color: "var(--gcc-navy)" }}>{title}</strong>
+      <div style={{ display: "grid", gap: 10, marginTop: 12 }}>
+        {items.map((item, index) => (
+          <label key={`${title}-${index}`} style={{ display: "flex", gap: 10, alignItems: "flex-start", color: "var(--gcc-ink)", lineHeight: 1.55 }}>
+            <input type="checkbox" checked={selected[index] || false} onChange={() => onToggle(index)} style={{ marginTop: 5 }} />
+            <span>{render(item)}</span>
+          </label>
+        ))}
+      </div>
     </div>
   );
 }

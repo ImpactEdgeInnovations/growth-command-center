@@ -35,7 +35,12 @@ export async function GET(request: Request) {
 
   const workspace = await supabase.from("workspaces").select("*").eq("id", workspaceId).maybeSingle();
   const [plans, targets, milestones, tasks, investors, marketing, weeklyReviews] = await Promise.all([
-    supabase.from("growth_plans").select("*").eq("workspace_id", workspaceId).order("updated_at", { ascending: false }).limit(8),
+    supabase
+      .from("growth_plans")
+      .select("id,title,status,ai_status,source_type,updated_at,created_at")
+      .eq("workspace_id", workspaceId)
+      .order("updated_at", { ascending: false })
+      .limit(8),
     supabase.from("growth_targets").select("*").eq("workspace_id", workspaceId).order("updated_at", { ascending: false }).limit(8),
     supabase.from("growth_milestones").select("*").eq("workspace_id", workspaceId).order("due_at", { ascending: true }).limit(8),
     supabase.from("team_tasks").select("*").eq("workspace_id", workspaceId).order("updated_at", { ascending: false }).limit(8),

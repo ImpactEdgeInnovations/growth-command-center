@@ -1,7 +1,7 @@
 import AccessRequestForm from "./ui/access-request-form";
 
 const features = [
-  ["Upload plans", "Upload a growth MD/PDF/DOCX later, extract the plan, and convert it into targets and tasks."],
+  ["Upload plans", "Upload Markdown/text plans now, extract the plan, and convert it into human-approved targets and tasks."],
   ["Investor CRM", "Track companies contacted, responses, stages, and next follow-ups."],
   ["Team accountability", "See what marketers, founders, and operators promised and delivered."],
   ["AI advisor", "Ask for summaries and recommendations, then approve before anything is sent."],
