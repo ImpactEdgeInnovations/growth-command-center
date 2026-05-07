@@ -24,6 +24,16 @@ type SuggestionSelection = {
   tasks: boolean[];
 };
 
+type DraftBrief = {
+  companyName: string;
+  businessType: string;
+  stage: "idea" | "early" | "growing" | "fundraising" | "scaling";
+  topGoal: string;
+  market: string;
+  channels: string;
+  context: string;
+};
+
 const checkedAll = (suggestions: PlanSuggestions): SuggestionSelection => ({
   targets: suggestions.targets.map(() => true),
   milestones: suggestions.milestones.map(() => true),
@@ -34,6 +44,15 @@ export default function PlansClient() {
   const [workspaceId, setWorkspaceId] = useState("");
   const [plans, setPlans] = useState<SavedPlan[]>([]);
   const [selectedPlanId, setSelectedPlanId] = useState("");
+  const [draftBrief, setDraftBrief] = useState<DraftBrief>({
+    companyName: "",
+    businessType: "",
+    stage: "early",
+    topGoal: "",
+    market: "",
+    channels: "",
+    context: "",
+  });
   const [title, setTitle] = useState("");
   const [text, setText] = useState("");
   const [uploadTitle, setUploadTitle] = useState("");
@@ -46,7 +65,7 @@ export default function PlansClient() {
   const [selection, setSelection] = useState<SuggestionSelection>({ targets: [], milestones: [], tasks: [] });
   const [briefId, setBriefId] = useState("");
   const [suggestionModel, setSuggestionModel] = useState("");
-  const [busy, setBusy] = useState<"plan" | "upload" | "target" | "milestone" | "suggest" | "approve" | null>(null);
+  const [busy, setBusy] = useState<"draft" | "plan" | "upload" | "target" | "milestone" | "suggest" | "approve" | null>(null);
 
   const loadWorkspace = () => {
     fetch("/api/workspace/summary", { cache: "no-store" })
@@ -64,6 +83,28 @@ export default function PlansClient() {
   useEffect(() => {
     loadWorkspace();
   }, []);
+
+  const setDraftField = <K extends keyof DraftBrief>(key: K, value: DraftBrief[K]) => {
+    setDraftBrief((current) => ({ ...current, [key]: value }));
+  };
+
+  const generatePlanDraft = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setBusy("draft"); setMessage("");
+    try {
+      const response = await fetch("/api/ai/plan-draft", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ workspaceId, ...draftBrief }),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.error || "Could not draft growth plan.");
+      setTitle(payload.title || `${draftBrief.companyName} Growth Plan`);
+      setText(payload.planText || "");
+      setMessage(`AI drafted a plan using ${payload.model}. Review it below, edit anything you want, then save it as a growth plan.`);
+    } catch (err: any) { setMessage(err.message || "Could not draft growth plan."); }
+    finally { setBusy(null); }
+  };
 
   const savePlan = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -191,6 +232,36 @@ export default function PlansClient() {
     <div style={{ display: "grid", gap: 18 }}>
       {!workspaceId ? <div style={card}>Login to an approved workspace before saving plans.</div> : null}
       {message ? <div style={card}>{message}</div> : null}
+
+      <form onSubmit={generatePlanDraft} style={{ ...card, borderColor: "rgba(20,121,184,.22)", background: "radial-gradient(circle at top left, rgba(20,121,184,.12), transparent 32%), linear-gradient(135deg,#ffffff,#eef9ff)" }}>
+        <div style={{ color: "var(--gcc-blue)", fontSize: 12, fontWeight: 900, letterSpacing: ".18em", textTransform: "uppercase" }}>AI-first planning</div>
+        <h2 style={{ color: "var(--gcc-navy)", fontSize: 30, letterSpacing: -1, margin: "8px 0" }}>Let AI draft the first growth plan</h2>
+        <p style={{ ...muted, maxWidth: 820 }}>
+          Describe the business in plain language. AI drafts a practical plan, then you edit and save it.
+          Nothing becomes official until a human approves it.
+        </p>
+        <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))" }}>
+          <label style={label}>Company name<input required style={input} value={draftBrief.companyName} onChange={(event) => setDraftField("companyName", event.target.value)} placeholder="Acme Foods" /></label>
+          <label style={label}>Business type<input required style={input} value={draftBrief.businessType} onChange={(event) => setDraftField("businessType", event.target.value)} placeholder="B2B lending platform, restaurant, agency..." /></label>
+          <label style={label}>
+            Stage
+            <select style={input} value={draftBrief.stage} onChange={(event) => setDraftField("stage", event.target.value as DraftBrief["stage"])}>
+              <option value="idea">Idea / pre-launch</option>
+              <option value="early">Early users</option>
+              <option value="growing">Growing</option>
+              <option value="fundraising">Fundraising</option>
+              <option value="scaling">Scaling</option>
+            </select>
+          </label>
+        </div>
+        <label style={{ ...label, marginTop: 14 }}>Main goal<textarea required style={{ ...input, minHeight: 82 }} value={draftBrief.topGoal} onChange={(event) => setDraftField("topGoal", event.target.value)} placeholder="Example: reach 40 investors, onboard 100 paying customers, launch in Nairobi, improve social growth..." /></label>
+        <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fit,minmax(240px,1fr))", marginTop: 14 }}>
+          <label style={label}>Target market<input style={input} value={draftBrief.market} onChange={(event) => setDraftField("market", event.target.value)} placeholder="Kenyan SMEs, lenders, founders, restaurants..." /></label>
+          <label style={label}>Channels to use<input style={input} value={draftBrief.channels} onChange={(event) => setDraftField("channels", event.target.value)} placeholder="LinkedIn, WhatsApp, investor email, referrals..." /></label>
+        </div>
+        <label style={{ ...label, marginTop: 14 }}>Extra context<textarea style={{ ...input, minHeight: 95 }} value={draftBrief.context} onChange={(event) => setDraftField("context", event.target.value)} placeholder="Paste notes, constraints, current numbers, team capacity, budget, or investor context..." /></label>
+        <button disabled={!!busy || !workspaceId} style={{ ...button, marginTop: 16 }}>{busy === "draft" ? "Drafting plan..." : "Draft plan with AI"}</button>
+      </form>
 
       <section style={{ display: "grid", gap: 16, gridTemplateColumns: "repeat(auto-fit,minmax(300px,1fr))" }}>
         <form onSubmit={uploadPlan} style={card}>

@@ -7,6 +7,17 @@ export const planSchema = z.object({
   extractedText: z.string().trim().min(20).max(80000),
 });
 
+export const planDraftRequestSchema = z.object({
+  workspaceId: z.string().uuid(),
+  companyName: z.string().trim().min(2).max(160),
+  businessType: z.string().trim().min(2).max(160),
+  stage: z.enum(["idea", "early", "growing", "fundraising", "scaling"]).default("early"),
+  topGoal: z.string().trim().min(8).max(600),
+  market: z.string().trim().max(240).optional(),
+  channels: z.string().trim().max(400).optional(),
+  context: z.string().trim().max(4000).optional(),
+});
+
 export const targetSchema = z.object({
   workspaceId: z.string().uuid(),
   growthPlanId: z.string().uuid().optional().nullable(),
