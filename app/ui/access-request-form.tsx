@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { button, card, input, label, muted } from "./styles";
+import { button, card, chip, input, label, muted } from "./styles";
 
 const initial = { companyName: "", contactName: "", contactEmail: "", contactPhone: "", website: "", expectedTeamSize: "", useCase: "" };
 
@@ -33,7 +33,8 @@ export default function AccessRequestForm() {
 
   return (
     <form onSubmit={submit} style={card}>
-      <strong style={{ color: "var(--gcc-navy)", fontSize: 20 }}>Request company access</strong>
+      <span style={chip}>Private beta</span>
+      <strong style={{ display: "block", color: "var(--gcc-navy)", fontSize: 23, letterSpacing: -.5, marginTop: 12 }}>Request company access</strong>
       <p style={{ ...muted, marginTop: 8 }}>Super admin approves companies first. After approval, the owner logs in by email code.</p>
       <div style={{ display: "grid", gap: 14, marginTop: 18 }}>
         <label style={label}>Company name<input required style={input} value={form.companyName} onChange={(e) => setField("companyName", e.target.value)} placeholder="Example Ventures" /></label>

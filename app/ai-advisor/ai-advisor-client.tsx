@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, type FormEvent } from "react";
-import { button, card, input, label, muted } from "../ui/styles";
+import { aiPanel, button, card, chip, input, label, muted } from "../ui/styles";
 
 const examples = [
   "What should we focus on this week?",
@@ -41,11 +41,12 @@ export default function AiAdvisorClient() {
 
   return (
     <div style={{ display: "grid", gap: 18 }}>
-      <form onSubmit={ask} style={card}>
-        <h2 style={{ color: "var(--gcc-navy)", marginTop: 0 }}>Ask the AI advisor</h2>
+      <form onSubmit={ask} style={aiPanel}>
+        <span style={chip}>AI advisor</span>
+        <h2 style={{ color: "var(--gcc-navy)", marginTop: 12, letterSpacing: -.8 }}>Ask the AI advisor</h2>
         <p style={muted}>AI can advise, summarize, draft, and suggest. It cannot auto-send or approve decisions.</p>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 14 }}>
-          {examples.map((item) => <button type="button" key={item} onClick={() => setPrompt(item)} style={{ border: "1px solid rgba(20,121,184,.2)", background: "var(--gcc-sky)", color: "var(--gcc-blue)", borderRadius: 999, padding: "7px 10px", fontSize: 12, fontWeight: 800 }}>{item}</button>)}
+          {examples.map((item) => <button type="button" key={item} onClick={() => setPrompt(item)} style={chip}>{item}</button>)}
         </div>
         <label style={label}>Question<textarea required style={{ ...input, minHeight: 95 }} value={prompt} onChange={(e) => setPrompt(e.target.value)} /></label>
         <label style={{ ...label, marginTop: 14 }}>Optional context<textarea style={{ ...input, minHeight: 140 }} value={context} onChange={(e) => setContext(e.target.value)} placeholder="Paste growth plan section, investor notes, team update, social media numbers..." /></label>

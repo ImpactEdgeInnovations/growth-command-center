@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { button, card, input, label, muted, secondaryButton } from "../ui/styles";
+import { button, card, chip, input, label, muted, secondaryButton } from "../ui/styles";
 
 type Props = {
   workspaceId: string;
@@ -60,7 +60,8 @@ export default function WorkspaceActionForms({ workspaceId, onSaved }: Props) {
 
   return (
     <section style={card}>
-      <h2 style={{ color: "var(--gcc-navy)", marginTop: 0 }}>Quick add</h2>
+      <span style={chip}>Capture work fast</span>
+      <h2 style={{ color: "var(--gcc-navy)", marginTop: 12 }}>Quick add</h2>
       <p style={muted}>Capture work as it happens so the weekly growth picture stays honest.</p>
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16 }}>
         {[

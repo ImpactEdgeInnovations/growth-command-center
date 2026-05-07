@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { button, card, muted, secondaryButton } from "../ui/styles";
+import { button, card, chip, metricCard, muted, secondaryButton } from "../ui/styles";
 
 type Summary = {
   ok?: boolean;
@@ -56,10 +56,11 @@ export default function SuperAdminClient() {
           ["Workspaces", counts.approvedWorkspaces || 0],
           ["Subscriptions on", counts.subscriptionsOn || 0],
           ["AI drafts", counts.aiDrafts || 0],
-        ].map(([label, value]) => <div key={label} style={card}><p style={{ fontSize: 30, fontWeight: 900, margin: 0, color: "var(--gcc-navy)" }}>{value}</p><p style={{ ...muted, margin: 0 }}>{label}</p></div>)}
+        ].map(([label, value]) => <div key={label} style={metricCard}><p style={{ fontSize: 31, fontWeight: 950, margin: 0, color: "var(--gcc-navy)" }}>{value}</p><p style={{ ...muted, margin: "4px 0 0" }}>{label}</p></div>)}
       </section>
       <section style={card}>
-        <h2 style={{ color: "var(--gcc-navy)", marginTop: 0 }}>Company applications</h2>
+        <span style={chip}>Needs review</span>
+        <h2 style={{ color: "var(--gcc-navy)", marginTop: 12 }}>Company applications</h2>
         <p style={muted}>Approve companies manually. Subscription can stay off during early controlled launch.</p>
         <div style={{ display: "grid", gap: 12, marginTop: 16 }}>
           {pending.length === 0 ? <p style={muted}>No pending companies.</p> : pending.map((row) => (
@@ -76,7 +77,8 @@ export default function SuperAdminClient() {
         </div>
       </section>
       <section style={card}>
-        <h2 style={{ color: "var(--gcc-navy)", marginTop: 0 }}>Approved workspaces</h2>
+        <span style={chip}>Approved tenants</span>
+        <h2 style={{ color: "var(--gcc-navy)", marginTop: 12 }}>Approved workspaces</h2>
         <div style={{ display: "grid", gap: 10 }}>
           {(summary.workspaces || []).map((row) => <div key={row.id} style={{ display: "flex", justifyContent: "space-between", gap: 12, borderBottom: "1px solid rgba(15,23,42,.08)", paddingBottom: 10 }}><span><strong>{row.company_name}</strong><br /><small style={muted}>{row.owner_email}</small></span><span style={{ color: "var(--gcc-blue)", fontWeight: 800 }}>{row.subscription_enabled ? row.subscription_status : "subscription off"}</span></div>)}
         </div>

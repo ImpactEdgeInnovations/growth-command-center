@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, type FormEvent } from "react";
-import { button, card, input, label, muted, secondaryButton } from "../ui/styles";
+import { aiPanel, button, card, chip, input, label, muted, secondaryButton } from "../ui/styles";
 
 const getWeekBounds = () => {
   const now = new Date();
@@ -100,8 +100,9 @@ export default function WeeklyReviewClient() {
     <div style={{ display: "grid", gap: 18 }}>
       {!workspaceId ? <div style={card}>Login to an approved workspace before saving weekly reviews.</div> : null}
       {message ? <pre style={{ ...card, whiteSpace: "pre-wrap", lineHeight: 1.7 }}>{message}</pre> : null}
-      <form onSubmit={submit} style={card}>
-        <h2 style={{ color: "var(--gcc-navy)", marginTop: 0 }}>Weekly founder review</h2>
+      <form onSubmit={submit} style={aiPanel}>
+        <span style={chip}>Weekly rhythm</span>
+        <h2 style={{ color: "var(--gcc-navy)", marginTop: 12, letterSpacing: -.8 }}>Weekly founder review</h2>
         <p style={muted}>
           This is the weekly rhythm: what happened, what blocked us, what the numbers say,
           and what we focus on next.

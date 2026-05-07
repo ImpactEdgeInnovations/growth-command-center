@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { button, card, muted, secondaryButton } from "../ui/styles";
+import { aiPanel, button, card, chip, metricCard, muted, secondaryButton } from "../ui/styles";
 import WorkspaceActionForms from "./workspace-action-forms";
 
 type Summary = { workspace?: any; counts?: Record<string, number>; recent?: Record<string, any[]> };
@@ -57,9 +57,17 @@ export default function WorkspaceClient() {
   return (
     <div style={{ display: "grid", gap: 18 }}>
       {message ? <div style={{ ...card, color: "var(--gcc-rose)", fontWeight: 800 }}>{message}</div> : null}
-      {summary.workspace ? <div style={card}><strong style={{ color: "var(--gcc-navy)", fontSize: 20 }}>{summary.workspace.company_name}</strong><p style={muted}>Plan: {summary.workspace.plan} · Subscription: {summary.workspace.subscription_enabled ? summary.workspace.subscription_status : "off"}</p></div> : null}
-      <section style={{ ...card, borderColor: "rgba(20,121,184,.22)", background: "radial-gradient(circle at top left, rgba(20,121,184,.12), transparent 32%), linear-gradient(135deg,#ffffff,#eef9ff)" }}>
-        <div style={{ color: "var(--gcc-blue)", fontSize: 12, fontWeight: 900, letterSpacing: ".18em", textTransform: "uppercase" }}>AI command brief</div>
+      {summary.workspace ? (
+        <div style={{ ...card, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 14, flexWrap: "wrap" }}>
+          <div>
+            <span style={chip}>Active workspace</span>
+            <strong style={{ display: "block", color: "var(--gcc-navy)", fontSize: 24, letterSpacing: -.6, marginTop: 10 }}>{summary.workspace.company_name}</strong>
+          </div>
+          <p style={{ ...muted, margin: 0 }}>Plan: {summary.workspace.plan} · Subscription: {summary.workspace.subscription_enabled ? summary.workspace.subscription_status : "off"}</p>
+        </div>
+      ) : null}
+      <section style={aiPanel}>
+        <div style={chip}>AI command brief</div>
         <h2 style={{ color: "var(--gcc-navy)", margin: "8px 0", fontSize: 28, letterSpacing: -1 }}>Ask AI what deserves attention this week</h2>
         <p style={{ ...muted, maxWidth: 780 }}>
           AI reads the current workspace snapshot — plans, targets, tasks, investors, marketing, and weekly reviews —
@@ -76,7 +84,7 @@ export default function WorkspaceClient() {
         ) : null}
       </section>
       <section style={{ display: "grid", gap: 14, gridTemplateColumns: "repeat(auto-fit,minmax(170px,1fr))" }}>
-        {[["Plans", counts.plans || 0], ["Targets", counts.targets || 0], ["Milestones", counts.milestones || 0], ["Tasks", counts.tasks || 0], ["Investor follow-ups", counts.investorFollowups || 0], ["Marketing logs", counts.marketingActivities || 0]].map(([label, value]) => <div key={label} style={card}><p style={{ fontSize: 28, fontWeight: 900, margin: 0, color: "var(--gcc-navy)" }}>{value}</p><p style={{ ...muted, margin: 0 }}>{label}</p></div>)}
+        {[["Plans", counts.plans || 0], ["Targets", counts.targets || 0], ["Milestones", counts.milestones || 0], ["Tasks", counts.tasks || 0], ["Investor follow-ups", counts.investorFollowups || 0], ["Marketing logs", counts.marketingActivities || 0]].map(([label, value]) => <div key={label} style={metricCard}><p style={{ fontSize: 31, fontWeight: 950, margin: 0, color: "var(--gcc-navy)", letterSpacing: -1 }}>{value}</p><p style={{ ...muted, margin: "4px 0 0" }}>{label}</p></div>)}
       </section>
       <section style={card}>
         <h2 style={{ color: "var(--gcc-navy)", marginTop: 0 }}>Start here</h2>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
-import { button, card, input, label, muted, secondaryButton } from "../ui/styles";
+import { aiPanel, button, card, chip, input, label, muted, secondaryButton } from "../ui/styles";
 
 type SavedPlan = {
   id: string;
@@ -233,8 +233,8 @@ export default function PlansClient() {
       {!workspaceId ? <div style={card}>Login to an approved workspace before saving plans.</div> : null}
       {message ? <div style={card}>{message}</div> : null}
 
-      <form onSubmit={generatePlanDraft} style={{ ...card, borderColor: "rgba(20,121,184,.22)", background: "radial-gradient(circle at top left, rgba(20,121,184,.12), transparent 32%), linear-gradient(135deg,#ffffff,#eef9ff)" }}>
-        <div style={{ color: "var(--gcc-blue)", fontSize: 12, fontWeight: 900, letterSpacing: ".18em", textTransform: "uppercase" }}>AI-first planning</div>
+      <form onSubmit={generatePlanDraft} style={aiPanel}>
+        <div style={chip}>AI-first planning</div>
         <h2 style={{ color: "var(--gcc-navy)", fontSize: 30, letterSpacing: -1, margin: "8px 0" }}>Let AI draft the first growth plan</h2>
         <p style={{ ...muted, maxWidth: 820 }}>
           Describe the business in plain language. AI drafts a practical plan, then you edit and save it.
@@ -265,7 +265,7 @@ export default function PlansClient() {
 
       <section style={{ display: "grid", gap: 16, gridTemplateColumns: "repeat(auto-fit,minmax(300px,1fr))" }}>
         <form onSubmit={uploadPlan} style={card}>
-          <div style={{ color: "var(--gcc-blue)", fontSize: 12, fontWeight: 900, letterSpacing: ".18em", textTransform: "uppercase" }}>Private upload</div>
+          <div style={chip}>Private upload</div>
           <h2 style={{ color: "var(--gcc-navy)", marginBottom: 8, marginTop: 8 }}>Upload a growth plan</h2>
           <p style={muted}>Upload a Markdown or text plan. The original file is stored privately, and readable text is saved for AI summaries and task planning.</p>
           <label style={label}>Plan title<input required style={input} value={uploadTitle} onChange={(e) => setUploadTitle(e.target.value)} placeholder="Q2 growth execution plan" /></label>
@@ -277,7 +277,7 @@ export default function PlansClient() {
           <button disabled={!!busy || !workspaceId} style={{ ...button, marginTop: 10 }}>{busy === "upload" ? "Uploading..." : "Upload privately"}</button>
         </form>
         <form onSubmit={savePlan} style={card}>
-          <div style={{ color: "var(--gcc-blue)", fontSize: 12, fontWeight: 900, letterSpacing: ".18em", textTransform: "uppercase" }}>Manual backup</div>
+          <div style={chip}>Manual backup</div>
           <h2 style={{ color: "var(--gcc-navy)", marginBottom: 8, marginTop: 8 }}>Paste a growth plan</h2>
           <p style={muted}>Paste text when you do not have a file ready. This uses the same plan model as uploads.</p>
           <label style={label}>Plan title<input required style={input} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Q2 investor and growth plan" /></label>
@@ -286,8 +286,8 @@ export default function PlansClient() {
         </form>
       </section>
 
-      <section style={{ ...card, borderColor: "rgba(20,121,184,.18)", background: "linear-gradient(135deg,#ffffff,#eef9ff)" }}>
-        <div style={{ color: "var(--gcc-blue)", fontSize: 12, fontWeight: 900, letterSpacing: ".18em", textTransform: "uppercase" }}>Human-approved AI</div>
+      <section style={aiPanel}>
+        <div style={chip}>Human-approved AI</div>
         <h2 style={{ color: "var(--gcc-navy)", marginBottom: 8, marginTop: 8 }}>Convert a saved plan into draft targets and tasks</h2>
         <p style={muted}>AI prepares the first draft. You choose what to approve before anything becomes a real target, milestone, or task.</p>
         <div style={{ display: "grid", gap: 12, gridTemplateColumns: "minmax(220px,1fr) auto", alignItems: "end" }}>

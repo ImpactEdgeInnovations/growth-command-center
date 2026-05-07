@@ -14,6 +14,8 @@ Let a founder or company team run growth execution from one workspace:
 8. Humans approve before any external action.
 9. Founder/team completes a weekly review to keep growth execution accountable.
 
+The interface should feel AI-native and modern: blue command-center palette, clear action cards, visible AI prompts, and human approval language near every AI workflow.
+
 ## Target Customers
 
 - Startups raising capital

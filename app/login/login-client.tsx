@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { button, card, input, label, muted } from "../ui/styles";
+import { button, card, chip, input, label, muted } from "../ui/styles";
 
 export default function LoginClient() {
   const [email, setEmail] = useState("");
@@ -36,14 +36,17 @@ export default function LoginClient() {
   };
 
   return (
-    <form onSubmit={step === "email" ? requestCode : verifyCode} style={{ ...card, maxWidth: 520, margin: "60px auto" }}>
-      <strong style={{ color: "var(--gcc-navy)", fontSize: 24 }}>Sign in by email</strong>
-      <p style={{ ...muted, marginTop: 8 }}>Companies must be approved first. Super admins use their allowlisted email.</p>
+    <main style={{ minHeight: "100vh", display: "grid", placeItems: "center", padding: 20 }}>
+      <form onSubmit={step === "email" ? requestCode : verifyCode} style={{ ...card, width: "100%", maxWidth: 540, padding: 28 }}>
+        <span style={chip}>Secure email code</span>
+        <strong style={{ display: "block", color: "var(--gcc-navy)", fontSize: 30, letterSpacing: -1, marginTop: 14 }}>Sign in to your growth cockpit</strong>
+        <p style={{ ...muted, marginTop: 8 }}>Companies must be approved first. Super admins use their allowlisted email.</p>
       <label style={{ ...label, marginTop: 18 }}>Email<input disabled={step === "code"} required type="email" value={email} onChange={(e) => setEmail(e.target.value)} style={input} /></label>
       {step === "code" ? <label style={{ ...label, marginTop: 14 }}>6-digit code<input required value={code} onChange={(e) => setCode(e.target.value)} style={input} placeholder="123456" /></label> : null}
       {error ? <p style={{ color: "var(--gcc-rose)", fontWeight: 700 }}>{error}</p> : null}
       {message ? <p style={{ color: "var(--gcc-emerald)", fontWeight: 700 }}>{message}</p> : null}
       <button disabled={busy} style={{ ...button, width: "100%", marginTop: 18 }}>{busy ? "Working..." : step === "email" ? "Send code" : "Verify and continue"}</button>
     </form>
+    </main>
   );
 }
