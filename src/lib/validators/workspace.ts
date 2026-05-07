@@ -129,6 +129,13 @@ export const superAdminWorkspaceUpdateSchema = z.object({
   billingNotes: z.string().trim().max(2000).optional(),
 });
 
+export const workspaceMemberInviteSchema = z.object({
+  workspaceId: z.string().uuid(),
+  email: z.string().trim().email().max(180).transform((value) => value.toLowerCase()),
+  fullName: z.string().trim().max(120).optional(),
+  role: z.enum(["admin", "member", "viewer"]).default("member"),
+});
+
 export const planSuggestionApproveSchema = z.object({
   workspaceId: z.string().uuid(),
   growthPlanId: z.string().uuid(),

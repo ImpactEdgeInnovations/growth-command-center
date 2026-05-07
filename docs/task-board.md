@@ -42,7 +42,7 @@
 
 ## Phase 4 — SaaS Readiness
 
-- [ ] GCC-23: Add member invites UI/API.
+- [x] GCC-23: Add member invites UI/API.
 - [ ] GCC-24: Add workspace role permissions UI.
 - [x] GCC-25: Add audit log table.
 - [ ] GCC-26: Add usage limits.

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { aiPanel, button, card, chip, metricCard, muted, secondaryButton } from "../ui/styles";
 import WorkspaceActionForms from "./workspace-action-forms";
+import WorkspaceMembersPanel from "./workspace-members-panel";
 
 type Summary = { workspace?: any; counts?: Record<string, number>; recent?: Record<string, any[]> };
 
@@ -96,7 +97,10 @@ export default function WorkspaceClient() {
         <p style={muted}>Best flow: add the plan, convert it into targets and milestones, assign team tasks, then run weekly review.</p>
       </section>
       {summary.workspace?.id ? (
-        <WorkspaceActionForms workspaceId={summary.workspace.id} onSaved={loadSummary} />
+        <>
+          <WorkspaceMembersPanel workspaceId={summary.workspace.id} />
+          <WorkspaceActionForms workspaceId={summary.workspace.id} onSaved={loadSummary} />
+        </>
       ) : null}
       <section style={{ display: "grid", gap: 16, gridTemplateColumns: "repeat(auto-fit,minmax(280px,1fr))" }}>
         <div style={card}>

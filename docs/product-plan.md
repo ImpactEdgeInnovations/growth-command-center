@@ -74,6 +74,18 @@ AI cannot:
 
 PDF/DOCX extraction is intentionally queued as a later phase so the first upload release stays lightweight and does not introduce a heavy document-processing runtime.
 
+## Team Access
+
+Workspace owners/admins can invite teammates by email from the workspace dashboard.
+Invited teammates log in through the same email-code flow, so there is no password surface to maintain.
+Roles are intentionally simple for the first SaaS release:
+
+- Admin: manages workspace execution and invites
+- Member: contributes tasks, investor outreach, marketing activity, and reviews
+- Viewer: reads the workspace without changing execution data
+
+Role enforcement is still server-side. UI labels are helpers, not the security boundary.
+
 ## Product Boundary
 
 This is a separate SaaS product. CaseReady can be the first customer, but Growth Command Center must not depend on CaseReady code, database tables, or routes.
