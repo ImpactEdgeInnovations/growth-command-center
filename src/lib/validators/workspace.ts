@@ -136,6 +136,13 @@ export const workspaceMemberInviteSchema = z.object({
   role: z.enum(["admin", "member", "viewer"]).default("member"),
 });
 
+export const workspaceMemberUpdateSchema = z.object({
+  workspaceId: z.string().uuid(),
+  memberId: z.string().uuid(),
+  role: z.enum(["admin", "member", "viewer"]),
+  status: z.enum(["invited", "active", "suspended", "removed"]),
+});
+
 export const planSuggestionApproveSchema = z.object({
   workspaceId: z.string().uuid(),
   growthPlanId: z.string().uuid(),

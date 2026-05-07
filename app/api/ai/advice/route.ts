@@ -1,5 +1,5 @@
 import { getSessionFromCookies } from "@/src/lib/auth/session";
-import { assertWorkspaceAccess } from "@/src/lib/workspace/access";
+import { assertWorkspaceAccess, canWriteWorkspace } from "@/src/lib/workspace/access";
 import { createSupabaseAdminClient } from "@/src/lib/supabase/admin";
 import { generateGrowthAdvice } from "@/src/lib/ai/advisor";
 import { apiError } from "@/src/lib/api/response";
@@ -15,6 +15,7 @@ export async function POST(request: Request) {
   if (workspaceId) {
     const access = await assertWorkspaceAccess(workspaceId, session);
     if (!access.ok) return apiError("Workspace access denied.", 403, "FORBIDDEN");
+    if (!canWriteWorkspace(access.role)) return apiError("View-only teammates cannot change this workspace.", 403, "READ_ONLY_ROLE");
   }
 
   try {

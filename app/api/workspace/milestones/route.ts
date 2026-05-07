@@ -1,5 +1,5 @@
 import { getSessionFromCookies } from "@/src/lib/auth/session";
-import { assertWorkspaceAccess } from "@/src/lib/workspace/access";
+import { assertWorkspaceAccess, canWriteWorkspace } from "@/src/lib/workspace/access";
 import { createSupabaseAdminClient } from "@/src/lib/supabase/admin";
 import { apiError } from "@/src/lib/api/response";
 import { milestoneSchema } from "@/src/lib/validators/workspace";
@@ -11,6 +11,7 @@ export async function POST(request: Request) {
   if (!parsed.success) return apiError("Add a milestone title.", 400);
   const access = await assertWorkspaceAccess(parsed.data.workspaceId, session);
   if (!access.ok) return apiError("Workspace access denied.", 403, "FORBIDDEN");
+  if (!canWriteWorkspace(access.role)) return apiError("View-only teammates cannot change this workspace.", 403, "READ_ONLY_ROLE");
   const supabase = createSupabaseAdminClient();
   const { data, error } = await supabase.from("growth_milestones").insert({
     workspace_id: parsed.data.workspaceId,

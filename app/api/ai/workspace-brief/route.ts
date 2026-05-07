@@ -3,7 +3,7 @@ import { apiError } from "@/src/lib/api/response";
 import { generateWorkspaceBrief } from "@/src/lib/ai/workspace-brief";
 import { createSupabaseAdminClient } from "@/src/lib/supabase/admin";
 import { workspaceBriefSchema } from "@/src/lib/validators/workspace";
-import { assertWorkspaceAccess } from "@/src/lib/workspace/access";
+import { assertWorkspaceAccess, canWriteWorkspace } from "@/src/lib/workspace/access";
 
 const listLines = (title: string, rows: any[], render: (row: any) => string) => {
   if (!rows.length) return `${title}: none yet.`;
@@ -19,6 +19,7 @@ export async function POST(request: Request) {
 
   const access = await assertWorkspaceAccess(parsed.data.workspaceId, session);
   if (!access.ok) return apiError("Workspace access denied.", 403, "FORBIDDEN");
+  if (!canWriteWorkspace(access.role)) return apiError("View-only teammates cannot change this workspace.", 403, "READ_ONLY_ROLE");
 
   const supabase = createSupabaseAdminClient();
   const [

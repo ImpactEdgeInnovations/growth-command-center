@@ -2,7 +2,7 @@ import { getSessionFromCookies } from "@/src/lib/auth/session";
 import { apiError } from "@/src/lib/api/response";
 import { createSupabaseAdminClient } from "@/src/lib/supabase/admin";
 import { planSchema } from "@/src/lib/validators/workspace";
-import { assertWorkspaceAccess } from "@/src/lib/workspace/access";
+import { assertWorkspaceAccess, canWriteWorkspace } from "@/src/lib/workspace/access";
 
 const PLAN_UPLOAD_BUCKET = "growth-plans";
 const MAX_PLAN_UPLOAD_BYTES = 2 * 1024 * 1024;
@@ -57,6 +57,7 @@ export async function POST(request: Request) {
 
   const access = await assertWorkspaceAccess(parsed.data.workspaceId, session);
   if (!access.ok) return apiError("Workspace access denied.", 403, "FORBIDDEN");
+  if (!canWriteWorkspace(access.role)) return apiError("View-only teammates cannot change this workspace.", 403, "READ_ONLY_ROLE");
 
   const safeName = cleanFileName(upload.name);
   const storagePath = `${parsed.data.workspaceId}/${Date.now()}-${safeName}`;

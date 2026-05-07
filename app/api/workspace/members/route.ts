@@ -3,10 +3,8 @@ import { apiError } from "@/src/lib/api/response";
 import { optionalEnv } from "@/src/lib/env";
 import { sendEmail } from "@/src/lib/email/send";
 import { createSupabaseAdminClient } from "@/src/lib/supabase/admin";
-import { workspaceMemberInviteSchema } from "@/src/lib/validators/workspace";
-import { assertWorkspaceAccess } from "@/src/lib/workspace/access";
-
-const MANAGER_ROLES = new Set(["super_admin", "owner", "admin"]);
+import { workspaceMemberInviteSchema, workspaceMemberUpdateSchema } from "@/src/lib/validators/workspace";
+import { assertWorkspaceAccess, canManageWorkspace } from "@/src/lib/workspace/access";
 
 export async function GET(request: Request) {
   const session = await getSessionFromCookies();
@@ -21,7 +19,7 @@ export async function GET(request: Request) {
   const supabase = createSupabaseAdminClient();
   const { data, error } = await supabase
     .from("workspace_members")
-    .select("id,email,full_name,role,status,joined_at,created_at,updated_at")
+    .select("id,user_id,email,full_name,role,status,joined_at,created_at,updated_at")
     .eq("workspace_id", workspaceId)
     .order("created_at", { ascending: true });
 
@@ -29,7 +27,7 @@ export async function GET(request: Request) {
 
   return Response.json({
     ok: true,
-    canManage: MANAGER_ROLES.has(access.role || ""),
+    canManage: canManageWorkspace(access.role),
     members: data || [],
   });
 }
@@ -43,7 +41,7 @@ export async function POST(request: Request) {
 
   const access = await assertWorkspaceAccess(parsed.data.workspaceId, session);
   if (!access.ok) return apiError("Workspace access denied.", 403, "FORBIDDEN");
-  if (!MANAGER_ROLES.has(access.role || "")) {
+  if (!canManageWorkspace(access.role)) {
     return apiError("Only workspace owners/admins can invite teammates.", 403, "FORBIDDEN");
   }
 
@@ -140,4 +138,69 @@ export async function POST(request: Request) {
   });
 
   return Response.json({ ok: true, member: result.data });
+}
+
+export async function PATCH(request: Request) {
+  const session = await getSessionFromCookies();
+  if (!session) return apiError("Unauthorized", 401, "UNAUTHORIZED");
+
+  const parsed = workspaceMemberUpdateSchema.safeParse(await request.json().catch(() => ({})));
+  if (!parsed.success) return apiError("Choose a valid teammate role and status.", 400);
+
+  const access = await assertWorkspaceAccess(parsed.data.workspaceId, session);
+  if (!access.ok) return apiError("Workspace access denied.", 403, "FORBIDDEN");
+  if (!canManageWorkspace(access.role)) {
+    return apiError("Only workspace owners/admins can update teammate access.", 403, "FORBIDDEN");
+  }
+
+  const supabase = createSupabaseAdminClient();
+  const { data: member } = await supabase
+    .from("workspace_members")
+    .select("id,user_id,email,full_name,role,status")
+    .eq("id", parsed.data.memberId)
+    .eq("workspace_id", parsed.data.workspaceId)
+    .maybeSingle();
+
+  if (!member) return apiError("Team member not found.", 404);
+  if (member.role === "owner") {
+    return apiError("Workspace owner access is managed by the super admin panel.", 400, "OWNER_MANAGED");
+  }
+  if (member.user_id === session.userId) {
+    return apiError("You cannot change your own access from this panel.", 400, "SELF_ACCESS_LOCKED");
+  }
+  if (!member.user_id && parsed.data.status === "active") {
+    return apiError("Invited teammates become active after their first email-code login.", 400, "INVITE_NOT_CLAIMED");
+  }
+
+  const nowIso = new Date().toISOString();
+  const { data: updated, error } = await supabase
+    .from("workspace_members")
+    .update({
+      role: parsed.data.role,
+      status: parsed.data.status,
+      updated_at: nowIso,
+    })
+    .eq("id", parsed.data.memberId)
+    .select("*")
+    .maybeSingle();
+
+  if (error || !updated) return apiError("Could not update teammate access.", 500);
+
+  await supabase.from("audit_logs").insert({
+    workspace_id: parsed.data.workspaceId,
+    actor_user_id: session.userId,
+    actor_email: session.email,
+    action: "workspace_member_access_updated",
+    entity_type: "workspace_member",
+    entity_id: parsed.data.memberId,
+    details: {
+      email: member.email,
+      previous_role: member.role,
+      previous_status: member.status,
+      next_role: parsed.data.role,
+      next_status: parsed.data.status,
+    },
+  });
+
+  return Response.json({ ok: true, member: updated });
 }

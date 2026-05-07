@@ -85,6 +85,8 @@ Roles are intentionally simple for the first SaaS release:
 - Viewer: reads the workspace without changing execution data
 
 Role enforcement is still server-side. UI labels are helpers, not the security boundary.
+Viewer accounts can load dashboards and workspace history, but they are blocked from saving plans, targets, tasks, outreach logs, weekly reviews, or workspace-bound AI briefs.
+Owner access is intentionally locked out of the workspace member panel so super admin remains the clear escalation path for ownership changes.
 
 ## Product Boundary
 

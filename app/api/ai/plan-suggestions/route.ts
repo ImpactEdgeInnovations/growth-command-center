@@ -3,7 +3,7 @@ import { apiError } from "@/src/lib/api/response";
 import { generatePlanSuggestions } from "@/src/lib/ai/plan-suggestions";
 import { createSupabaseAdminClient } from "@/src/lib/supabase/admin";
 import { planSuggestionRequestSchema } from "@/src/lib/validators/workspace";
-import { assertWorkspaceAccess } from "@/src/lib/workspace/access";
+import { assertWorkspaceAccess, canWriteWorkspace } from "@/src/lib/workspace/access";
 
 export async function POST(request: Request) {
   const session = await getSessionFromCookies();
@@ -14,6 +14,7 @@ export async function POST(request: Request) {
 
   const access = await assertWorkspaceAccess(parsed.data.workspaceId, session);
   if (!access.ok) return apiError("Workspace access denied.", 403, "FORBIDDEN");
+  if (!canWriteWorkspace(access.role)) return apiError("View-only teammates cannot change this workspace.", 403, "READ_ONLY_ROLE");
 
   const supabase = createSupabaseAdminClient();
   const { data: plan, error: planError } = await supabase
