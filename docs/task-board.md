@@ -22,9 +22,9 @@
 - [x] GCC-09: Add growth targets schema/API.
 - [x] GCC-10: Add milestone schema/API.
 - [x] GCC-11: Add plan paste/upload-ready schema/API.
-- [ ] GCC-12: Add team task UI.
-- [ ] GCC-13: Add investor outreach CRM UI/API.
-- [ ] GCC-14: Add marketing activity tracker UI/API.
+- [x] GCC-12: Add team task UI/API.
+- [x] GCC-13: Add investor outreach CRM UI/API.
+- [x] GCC-14: Add marketing activity tracker UI/API.
 - [ ] GCC-15: Add weekly founder review UI/API.
 
 ## Phase 3 — Upload + AI Advisor

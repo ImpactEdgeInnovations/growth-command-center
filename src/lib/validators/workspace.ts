@@ -27,6 +27,56 @@ export const milestoneSchema = z.object({
   dueAt: z.string().trim().optional(),
 });
 
+export const taskSchema = z.object({
+  workspaceId: z.string().uuid(),
+  growthPlanId: z.string().uuid().optional().nullable(),
+  title: z.string().trim().min(2).max(180),
+  lane: z
+    .enum(["founder", "marketing", "sales", "investor", "ops", "content", "growth"])
+    .default("growth"),
+  assigneeName: z.string().trim().max(120).optional(),
+  assigneeEmail: z.string().trim().email().max(180).optional().or(z.literal("")),
+  priority: z.enum(["low", "medium", "high", "urgent"]).default("medium"),
+  dueAt: z.string().trim().optional(),
+  notes: z.string().trim().max(1200).optional(),
+});
+
+export const investorSchema = z.object({
+  workspaceId: z.string().uuid(),
+  investorName: z.string().trim().min(2).max(180),
+  companyName: z.string().trim().max(180).optional(),
+  contactName: z.string().trim().max(120).optional(),
+  contactEmail: z.string().trim().email().max(180).optional().or(z.literal("")),
+  stage: z
+    .enum([
+      "identified",
+      "contacted",
+      "warm",
+      "meeting",
+      "diligence",
+      "committed",
+      "passed",
+    ])
+    .default("identified"),
+  status: z.enum(["open", "follow_up", "warm", "closed", "archived"]).default("open"),
+  source: z.string().trim().max(140).optional(),
+  lastResponse: z.string().trim().max(1200).optional(),
+  nextFollowUpAt: z.string().trim().optional(),
+  notes: z.string().trim().max(1200).optional(),
+});
+
+export const marketingSchema = z.object({
+  workspaceId: z.string().uuid(),
+  channel: z.string().trim().min(2).max(100),
+  activityType: z.string().trim().min(2).max(120),
+  title: z.string().trim().min(2).max(180),
+  ownerName: z.string().trim().max(120).optional(),
+  metricName: z.string().trim().max(100).optional(),
+  metricValue: z.coerce.number().min(0).optional(),
+  activityDate: z.string().trim().optional(),
+  notes: z.string().trim().max(1200).optional(),
+});
+
 export const adviceSchema = z.object({
   workspaceId: z.string().uuid().optional(),
   growthPlanId: z.string().uuid().optional(),

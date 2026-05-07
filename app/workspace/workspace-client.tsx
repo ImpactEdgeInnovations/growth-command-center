@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { card, muted, secondaryButton } from "../ui/styles";
+import WorkspaceActionForms from "./workspace-action-forms";
 
 type Summary = { workspace?: any; counts?: Record<string, number>; recent?: Record<string, any[]> };
 
@@ -9,7 +10,7 @@ export default function WorkspaceClient() {
   const [summary, setSummary] = useState<Summary>({ counts: {}, recent: {} });
   const [message, setMessage] = useState("");
 
-  useEffect(() => {
+  const loadSummary = () => {
     fetch("/api/workspace/summary", { cache: "no-store" })
       .then(async (response) => {
         const payload = await response.json().catch(() => ({}));
@@ -17,6 +18,10 @@ export default function WorkspaceClient() {
         setSummary(payload);
       })
       .catch((error) => setMessage(error.message || "Could not load workspace."));
+  };
+
+  useEffect(() => {
+    loadSummary();
   }, []);
 
   const counts = summary.counts || {};
@@ -34,6 +39,23 @@ export default function WorkspaceClient() {
           <a href="/ai-advisor" style={secondaryButton}>Ask AI advisor</a>
         </div>
         <p style={muted}>Best flow: add the plan, convert it into targets and milestones, assign team tasks, then run weekly review.</p>
+      </section>
+      {summary.workspace?.id ? (
+        <WorkspaceActionForms workspaceId={summary.workspace.id} onSaved={loadSummary} />
+      ) : null}
+      <section style={{ display: "grid", gap: 16, gridTemplateColumns: "repeat(auto-fit,minmax(280px,1fr))" }}>
+        <div style={card}>
+          <h2 style={{ color: "var(--gcc-navy)", marginTop: 0 }}>Team tasks</h2>
+          {(summary.recent?.tasks || []).length === 0 ? <p style={muted}>No team tasks yet.</p> : (summary.recent?.tasks || []).map((task) => <p key={task.id} style={muted}><strong>{task.title}</strong><br />{task.lane} · {task.priority} · {task.status}</p>)}
+        </div>
+        <div style={card}>
+          <h2 style={{ color: "var(--gcc-navy)", marginTop: 0 }}>Investor outreach</h2>
+          {(summary.recent?.investors || []).length === 0 ? <p style={muted}>No investor outreach yet.</p> : (summary.recent?.investors || []).map((item) => <p key={item.id} style={muted}><strong>{item.investor_name}</strong><br />{item.stage} · {item.status}</p>)}
+        </div>
+        <div style={card}>
+          <h2 style={{ color: "var(--gcc-navy)", marginTop: 0 }}>Marketing activity</h2>
+          {(summary.recent?.marketing || []).length === 0 ? <p style={muted}>No marketing activity yet.</p> : (summary.recent?.marketing || []).map((item) => <p key={item.id} style={muted}><strong>{item.title}</strong><br />{item.channel} · {item.metric_name || "No metric"} {item.metric_value || ""}</p>)}
+        </div>
       </section>
       <section style={card}>
         <h2 style={{ color: "var(--gcc-navy)", marginTop: 0 }}>Recent plans</h2>
