@@ -37,6 +37,7 @@
 - [x] GCC-21: Add plan-to-target/task AI suggestion review screen.
 - [x] GCC-22: Add human approval before saving AI suggestions.
 - [x] GCC-29: Add AI-first growth plan builder from business brief.
+- [x] GCC-30: Add dashboard AI command brief from live workspace activity.
 
 ## Phase 4 — SaaS Readiness
 

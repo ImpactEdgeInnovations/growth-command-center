@@ -116,6 +116,10 @@ export const planSuggestionRequestSchema = z.object({
   growthPlanId: z.string().uuid(),
 });
 
+export const workspaceBriefSchema = z.object({
+  workspaceId: z.string().uuid(),
+});
+
 export const planSuggestionApproveSchema = z.object({
   workspaceId: z.string().uuid(),
   growthPlanId: z.string().uuid(),

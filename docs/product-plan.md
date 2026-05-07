@@ -10,7 +10,7 @@ Let a founder or company team run growth execution from one workspace:
 4. Owner can ask AI to draft the first growth plan from a plain-language business brief.
 5. Owner uploads/pastes an existing growth plan when one already exists.
 6. Workspace converts the plan into targets, milestones, tasks, investor outreach, and marketing activities.
-7. AI summarizes, advises, drafts, and flags next actions.
+7. AI summarizes, advises, drafts, and flags next actions from the live workspace.
 8. Humans approve before any external action.
 9. Founder/team completes a weekly review to keep growth execution accountable.
 
@@ -46,6 +46,7 @@ AI can:
 - summarize marketer performance
 - generate founder weekly brief
 - summarize weekly reviews into wins, risks, and next actions
+- generate a dashboard command brief from current plans, tasks, investors, marketing, and weekly reviews
 - produce research-style notes from supplied context
 
 AI cannot:

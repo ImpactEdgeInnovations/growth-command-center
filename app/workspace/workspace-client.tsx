@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { card, muted, secondaryButton } from "../ui/styles";
+import { button, card, muted, secondaryButton } from "../ui/styles";
 import WorkspaceActionForms from "./workspace-action-forms";
 
 type Summary = { workspace?: any; counts?: Record<string, number>; recent?: Record<string, any[]> };
@@ -9,6 +9,9 @@ type Summary = { workspace?: any; counts?: Record<string, number>; recent?: Reco
 export default function WorkspaceClient() {
   const [summary, setSummary] = useState<Summary>({ counts: {}, recent: {} });
   const [message, setMessage] = useState("");
+  const [aiBrief, setAiBrief] = useState("");
+  const [aiModel, setAiModel] = useState("");
+  const [aiBusy, setAiBusy] = useState(false);
 
   const loadSummary = () => {
     fetch("/api/workspace/summary", { cache: "no-store" })
@@ -24,11 +27,54 @@ export default function WorkspaceClient() {
     loadSummary();
   }, []);
 
+  const generateWorkspaceBrief = async () => {
+    const workspaceId = summary.workspace?.id;
+    if (!workspaceId) {
+      setMessage("Login to an approved workspace before asking AI for a brief.");
+      return;
+    }
+    setAiBusy(true);
+    setMessage("");
+    setAiBrief("");
+    try {
+      const response = await fetch("/api/ai/workspace-brief", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ workspaceId }),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.error || "Could not generate workspace brief.");
+      setAiBrief(payload.advice || "No AI brief returned.");
+      setAiModel(payload.model || "");
+    } catch (error: any) {
+      setMessage(error.message || "Could not generate workspace brief.");
+    } finally {
+      setAiBusy(false);
+    }
+  };
+
   const counts = summary.counts || {};
   return (
     <div style={{ display: "grid", gap: 18 }}>
       {message ? <div style={{ ...card, color: "var(--gcc-rose)", fontWeight: 800 }}>{message}</div> : null}
       {summary.workspace ? <div style={card}><strong style={{ color: "var(--gcc-navy)", fontSize: 20 }}>{summary.workspace.company_name}</strong><p style={muted}>Plan: {summary.workspace.plan} · Subscription: {summary.workspace.subscription_enabled ? summary.workspace.subscription_status : "off"}</p></div> : null}
+      <section style={{ ...card, borderColor: "rgba(20,121,184,.22)", background: "radial-gradient(circle at top left, rgba(20,121,184,.12), transparent 32%), linear-gradient(135deg,#ffffff,#eef9ff)" }}>
+        <div style={{ color: "var(--gcc-blue)", fontSize: 12, fontWeight: 900, letterSpacing: ".18em", textTransform: "uppercase" }}>AI command brief</div>
+        <h2 style={{ color: "var(--gcc-navy)", margin: "8px 0", fontSize: 28, letterSpacing: -1 }}>Ask AI what deserves attention this week</h2>
+        <p style={{ ...muted, maxWidth: 780 }}>
+          AI reads the current workspace snapshot — plans, targets, tasks, investors, marketing, and weekly reviews —
+          then drafts a practical weekly brief. Humans still approve decisions before external action.
+        </p>
+        <button type="button" disabled={aiBusy || !summary.workspace?.id} onClick={generateWorkspaceBrief} style={button}>
+          {aiBusy ? "Reading workspace..." : "Generate weekly AI brief"}
+        </button>
+        {aiBrief ? (
+          <pre style={{ ...card, boxShadow: "none", marginTop: 16, whiteSpace: "pre-wrap", lineHeight: 1.7, color: "var(--gcc-ink)" }}>
+            {aiBrief}
+            {aiModel ? `\n\nModel: ${aiModel} · human approval required` : ""}
+          </pre>
+        ) : null}
+      </section>
       <section style={{ display: "grid", gap: 14, gridTemplateColumns: "repeat(auto-fit,minmax(170px,1fr))" }}>
         {[["Plans", counts.plans || 0], ["Targets", counts.targets || 0], ["Milestones", counts.milestones || 0], ["Tasks", counts.tasks || 0], ["Investor follow-ups", counts.investorFollowups || 0], ["Marketing logs", counts.marketingActivities || 0]].map(([label, value]) => <div key={label} style={card}><p style={{ fontSize: 28, fontWeight: 900, margin: 0, color: "var(--gcc-navy)" }}>{value}</p><p style={{ ...muted, margin: 0 }}>{label}</p></div>)}
       </section>
