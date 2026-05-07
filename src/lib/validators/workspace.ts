@@ -77,6 +77,19 @@ export const marketingSchema = z.object({
   notes: z.string().trim().max(1200).optional(),
 });
 
+export const weeklyReviewSchema = z.object({
+  workspaceId: z.string().uuid(),
+  weekStart: z.string().trim().min(8),
+  weekEnd: z.string().trim().min(8),
+  headline: z.string().trim().max(180).optional(),
+  wins: z.string().trim().max(4000).optional(),
+  blockers: z.string().trim().max(4000).optional(),
+  numbers: z.string().trim().max(4000).optional(),
+  nextFocus: z.string().trim().max(4000).optional(),
+  founderNote: z.string().trim().max(4000).optional(),
+  status: z.enum(["draft", "submitted"]).default("submitted"),
+});
+
 export const adviceSchema = z.object({
   workspaceId: z.string().uuid().optional(),
   growthPlanId: z.string().uuid().optional(),

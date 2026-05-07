@@ -37,6 +37,7 @@ export default function WorkspaceClient() {
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
           <a href="/plans" style={secondaryButton}>Upload / paste growth plan</a>
           <a href="/ai-advisor" style={secondaryButton}>Ask AI advisor</a>
+          <a href="/weekly-review" style={secondaryButton}>Weekly review</a>
         </div>
         <p style={muted}>Best flow: add the plan, convert it into targets and milestones, assign team tasks, then run weekly review.</p>
       </section>
@@ -55,6 +56,10 @@ export default function WorkspaceClient() {
         <div style={card}>
           <h2 style={{ color: "var(--gcc-navy)", marginTop: 0 }}>Marketing activity</h2>
           {(summary.recent?.marketing || []).length === 0 ? <p style={muted}>No marketing activity yet.</p> : (summary.recent?.marketing || []).map((item) => <p key={item.id} style={muted}><strong>{item.title}</strong><br />{item.channel} · {item.metric_name || "No metric"} {item.metric_value || ""}</p>)}
+        </div>
+        <div style={card}>
+          <h2 style={{ color: "var(--gcc-navy)", marginTop: 0 }}>Weekly reviews</h2>
+          {(summary.recent?.weeklyReviews || []).length === 0 ? <p style={muted}>No weekly reviews yet.</p> : (summary.recent?.weeklyReviews || []).map((item) => <p key={item.id} style={muted}><strong>{item.headline || "Weekly review"}</strong><br />{item.week_start} to {item.week_end} · {item.status}</p>)}
         </div>
       </section>
       <section style={card}>

@@ -11,6 +11,7 @@ Let a founder or company team run growth execution from one workspace:
 5. Workspace converts the plan into targets, milestones, tasks, investor outreach, and marketing activities.
 6. AI summarizes, advises, drafts, and flags next actions.
 7. Humans approve before any external action.
+8. Founder/team completes a weekly review to keep growth execution accountable.
 
 ## Target Customers
 
@@ -42,6 +43,7 @@ AI can:
 - draft investor follow-up emails
 - summarize marketer performance
 - generate founder weekly brief
+- summarize weekly reviews into wins, risks, and next actions
 - produce research-style notes from supplied context
 
 AI cannot:

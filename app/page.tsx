@@ -38,6 +38,7 @@ export default function HomePage() {
           <div style={{ display: "flex", gap: 12, marginTop: 26, flexWrap: "wrap" }}>
             <a href="/plans" style={cta}>Upload growth plan</a>
             <a href="/ai-advisor" style={secondary}>Ask AI advisor</a>
+            <a href="/weekly-review" style={secondary}>Weekly review</a>
           </div>
         </div>
 

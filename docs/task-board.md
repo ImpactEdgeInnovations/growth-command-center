@@ -25,7 +25,7 @@
 - [x] GCC-12: Add team task UI/API.
 - [x] GCC-13: Add investor outreach CRM UI/API.
 - [x] GCC-14: Add marketing activity tracker UI/API.
-- [ ] GCC-15: Add weekly founder review UI/API.
+- [x] GCC-15: Add weekly founder review UI/API.
 
 ## Phase 3 — Upload + AI Advisor
 

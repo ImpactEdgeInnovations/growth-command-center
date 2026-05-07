@@ -208,6 +208,26 @@ create table if not exists public.marketing_activities (
   updated_at timestamptz not null default now()
 );
 
+create table if not exists public.weekly_reviews (
+  id uuid primary key default gen_random_uuid(),
+  workspace_id uuid not null references public.workspaces(id) on delete cascade,
+  week_start date not null,
+  week_end date not null,
+  headline text,
+  wins text,
+  blockers text,
+  numbers text,
+  next_focus text,
+  founder_note text,
+  ai_summary text,
+  status text not null default 'draft'
+    check (status in ('draft', 'submitted', 'reviewed', 'archived')),
+  created_by uuid references public.platform_users(id) on delete set null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (workspace_id, week_start)
+);
+
 create table if not exists public.ai_briefs (
   id uuid primary key default gen_random_uuid(),
   workspace_id uuid not null references public.workspaces(id) on delete cascade,
@@ -250,6 +270,8 @@ create index if not exists growth_milestones_workspace_idx on public.growth_mile
 create index if not exists team_tasks_workspace_idx on public.team_tasks(workspace_id, status, due_at);
 create index if not exists investor_outreach_followup_idx on public.investor_outreach(workspace_id, status, next_follow_up_at);
 create index if not exists marketing_activities_workspace_date_idx on public.marketing_activities(workspace_id, activity_date desc);
+create index if not exists weekly_reviews_workspace_week_idx on public.weekly_reviews(workspace_id, week_start desc);
+create index if not exists weekly_reviews_workspace_status_idx on public.weekly_reviews(workspace_id, status, updated_at desc);
 create index if not exists ai_briefs_workspace_idx on public.ai_briefs(workspace_id, status, created_at desc);
 create index if not exists audit_logs_workspace_idx on public.audit_logs(workspace_id, created_at desc);
 
@@ -266,6 +288,7 @@ alter table public.growth_milestones enable row level security;
 alter table public.team_tasks enable row level security;
 alter table public.investor_outreach enable row level security;
 alter table public.marketing_activities enable row level security;
+alter table public.weekly_reviews enable row level security;
 alter table public.ai_briefs enable row level security;
 alter table public.audit_logs enable row level security;
 

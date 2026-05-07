@@ -34,13 +34,14 @@ export async function GET(request: Request) {
   }
 
   const workspace = await supabase.from("workspaces").select("*").eq("id", workspaceId).maybeSingle();
-  const [plans, targets, milestones, tasks, investors, marketing] = await Promise.all([
+  const [plans, targets, milestones, tasks, investors, marketing, weeklyReviews] = await Promise.all([
     supabase.from("growth_plans").select("*").eq("workspace_id", workspaceId).order("updated_at", { ascending: false }).limit(8),
     supabase.from("growth_targets").select("*").eq("workspace_id", workspaceId).order("updated_at", { ascending: false }).limit(8),
     supabase.from("growth_milestones").select("*").eq("workspace_id", workspaceId).order("due_at", { ascending: true }).limit(8),
     supabase.from("team_tasks").select("*").eq("workspace_id", workspaceId).order("updated_at", { ascending: false }).limit(8),
     supabase.from("investor_outreach").select("*").eq("workspace_id", workspaceId).order("updated_at", { ascending: false }).limit(8),
     supabase.from("marketing_activities").select("*").eq("workspace_id", workspaceId).order("activity_date", { ascending: false }).limit(8),
+    supabase.from("weekly_reviews").select("*").eq("workspace_id", workspaceId).order("week_start", { ascending: false }).limit(6),
   ]);
 
   return Response.json({
@@ -53,6 +54,7 @@ export async function GET(request: Request) {
       tasks: tasks.data?.length || 0,
       investorFollowups: investors.data?.filter((row: any) => ["open", "follow_up", "warm"].includes(row.status)).length || 0,
       marketingActivities: marketing.data?.length || 0,
+      weeklyReviews: weeklyReviews.data?.length || 0,
     },
     recent: {
       plans: plans.data || [],
@@ -61,6 +63,7 @@ export async function GET(request: Request) {
       tasks: tasks.data || [],
       investors: investors.data || [],
       marketing: marketing.data || [],
+      weeklyReviews: weeklyReviews.data || [],
     },
   });
 }
