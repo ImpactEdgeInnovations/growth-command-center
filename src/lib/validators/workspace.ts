@@ -120,6 +120,15 @@ export const workspaceBriefSchema = z.object({
   workspaceId: z.string().uuid(),
 });
 
+export const superAdminWorkspaceUpdateSchema = z.object({
+  workspaceId: z.string().uuid(),
+  status: z.enum(["approved", "suspended"]).default("approved"),
+  plan: z.enum(["trial", "starter", "growth", "enterprise"]).default("trial"),
+  subscriptionEnabled: z.boolean().default(false),
+  subscriptionStatus: z.enum(["off", "trial", "active", "past_due", "cancelled"]).default("off"),
+  billingNotes: z.string().trim().max(2000).optional(),
+});
+
 export const planSuggestionApproveSchema = z.object({
   workspaceId: z.string().uuid(),
   growthPlanId: z.string().uuid(),

@@ -47,4 +47,4 @@
 - [x] GCC-25: Add audit log table.
 - [ ] GCC-26: Add usage limits.
 - [ ] GCC-27: Add billing plan hooks.
-- [ ] GCC-28: Add super-admin subscription toggle UI.
+- [x] GCC-28: Add super-admin subscription toggle UI.

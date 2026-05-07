@@ -28,7 +28,7 @@ export async function GET() {
 
   const workspaces = await supabase
     .from("workspaces")
-    .select("id,company_name,slug,status,plan,subscription_enabled,subscription_status,owner_email,created_at")
+    .select("id,company_name,slug,status,plan,subscription_enabled,subscription_status,billing_notes,owner_email,created_at")
     .order("created_at", { ascending: false })
     .limit(80);
 

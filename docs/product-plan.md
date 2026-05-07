@@ -28,6 +28,7 @@ The interface should feel AI-native and modern: blue command-center palette, cle
 ## SaaS Commercial Model
 
 Super admin can keep subscriptions off during early beta.
+Super admin can manually set workspace plan, subscription status, billing notes, and suspension state from the owner panel.
 Later subscription plans can be:
 
 - Trial: limited workspace and AI use
