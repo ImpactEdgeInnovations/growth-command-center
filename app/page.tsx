@@ -23,7 +23,7 @@ export default function HomePage() {
       <section style={{ maxWidth: 1180, margin: "64px auto 0", display: "grid", gap: 30, gridTemplateColumns: "repeat(auto-fit,minmax(320px,1fr))", alignItems: "center" }}>
         <div>
           <p style={chip}>AI-native growth operating system</p>
-          <h1 style={{ fontSize: "clamp(42px, 6vw, 76px)", lineHeight: .94, margin: "18px 0", color: "var(--gcc-navy)", letterSpacing: -3, maxWidth: 780 }}>
+          <h1 style={{ fontSize: "clamp(42px, 6vw, 76px)", lineHeight: 1.02, margin: "18px 0", color: "var(--gcc-navy)", letterSpacing: "-0.018em", maxWidth: 780 }}>
             Run growth like an operating system, not a scattered notebook.
           </h1>
           <p style={{ ...muted, fontSize: 18, maxWidth: 670 }}>

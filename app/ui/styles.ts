@@ -61,8 +61,8 @@ export const muted: CSSProperties = { color: "var(--gcc-muted)", lineHeight: 1.7
 export const pageTitle: CSSProperties = {
   color: "var(--gcc-navy)",
   fontSize: "clamp(36px,5vw,58px)",
-  lineHeight: .98,
-  letterSpacing: -2,
+  lineHeight: 1.02,
+  letterSpacing: "-0.015em",
   margin: "12px 0",
 };
 export const aiPanel: CSSProperties = {
