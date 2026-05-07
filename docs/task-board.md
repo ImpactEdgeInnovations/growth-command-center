@@ -29,8 +29,8 @@
 
 ## Phase 3 — Upload + AI Advisor
 
-- [ ] GCC-16: Add private plan upload storage.
-- [ ] GCC-17: Add MD text extraction.
+- [x] GCC-16: Add private plan upload storage.
+- [x] GCC-17: Add MD text extraction.
 - [ ] GCC-18: Add PDF/DOCX extraction.
 - [x] GCC-19: Add AI advisor provider abstraction and fallback.
 - [x] GCC-20: Add AI advice API route.
