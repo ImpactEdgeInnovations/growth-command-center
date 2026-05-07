@@ -5,6 +5,7 @@ import { sendEmail } from "@/src/lib/email/send";
 import { createSupabaseAdminClient } from "@/src/lib/supabase/admin";
 import { workspaceMemberInviteSchema, workspaceMemberUpdateSchema } from "@/src/lib/validators/workspace";
 import { assertWorkspaceAccess, canManageWorkspace } from "@/src/lib/workspace/access";
+import { assertUsageLimit } from "@/src/lib/workspace/usage-limits";
 
 export async function GET(request: Request) {
   const session = await getSessionFromCookies();
@@ -75,6 +76,10 @@ export async function POST(request: Request) {
     .maybeSingle();
   if (existing?.role === "owner") {
     return apiError("Workspace owner access is managed by the super admin panel.", 400, "OWNER_MANAGED");
+  }
+  if (!existing || existing.status === "removed") {
+    const limit = await assertUsageLimit(parsed.data.workspaceId, "members");
+    if (!limit.ok) return apiError(limit.error, limit.status, limit.code);
   }
 
   const memberPayload = {

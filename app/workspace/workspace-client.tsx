@@ -5,7 +5,17 @@ import { aiPanel, button, card, chip, metricCard, muted, secondaryButton } from 
 import WorkspaceActionForms from "./workspace-action-forms";
 import WorkspaceMembersPanel from "./workspace-members-panel";
 
-type Summary = { workspace?: any; counts?: Record<string, number>; recent?: Record<string, any[]> };
+type Summary = {
+  workspace?: any;
+  counts?: Record<string, number>;
+  recent?: Record<string, any[]>;
+  usage?: {
+    plan?: string;
+    counts?: Record<string, number>;
+    limits?: Record<string, number | null>;
+    labels?: Record<string, string>;
+  };
+};
 
 export default function WorkspaceClient() {
   const [summary, setSummary] = useState<Summary>({ counts: {}, recent: {} });
@@ -66,6 +76,32 @@ export default function WorkspaceClient() {
           </div>
           <p style={{ ...muted, margin: 0 }}>Plan: {summary.workspace.plan} · Subscription: {summary.workspace.subscription_enabled ? summary.workspace.subscription_status : "off"}</p>
         </div>
+      ) : null}
+      {summary.usage?.counts ? (
+        <section style={card}>
+          <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+            <div>
+              <span style={chip}>Plan limits</span>
+              <h2 style={{ color: "var(--gcc-navy)", margin: "10px 0 4px" }}>Usage stays predictable as the workspace grows.</h2>
+              <p style={{ ...muted, margin: 0 }}>Super admin can upgrade the plan before a team hits a wall.</p>
+            </div>
+            <strong style={{ color: "var(--gcc-blue)", textTransform: "uppercase", letterSpacing: ".12em", fontSize: 12 }}>{summary.usage.plan || "trial"}</strong>
+          </div>
+          <div style={{ display: "grid", gap: 10, gridTemplateColumns: "repeat(auto-fit,minmax(160px,1fr))", marginTop: 16 }}>
+            {Object.keys(summary.usage.labels || {}).map((metric) => {
+              const count = summary.usage?.counts?.[metric] || 0;
+              const limit = summary.usage?.limits?.[metric];
+              const pct = limit ? Math.min(100, Math.round((count / limit) * 100)) : 0;
+              return (
+                <div key={metric} style={{ border: "1px solid rgba(8,58,99,.1)", borderRadius: 18, padding: 12, background: "rgba(248,252,255,.86)" }}>
+                  <strong style={{ color: "var(--gcc-navy)", display: "block" }}>{count} / {limit ?? "∞"}</strong>
+                  <p style={{ ...muted, margin: "3px 0 8px", fontSize: 12 }}>{summary.usage?.labels?.[metric]}</p>
+                  {limit ? <div style={{ height: 7, borderRadius: 999, background: "rgba(8,58,99,.08)", overflow: "hidden" }}><div style={{ width: `${pct}%`, height: "100%", background: pct > 85 ? "var(--gcc-rose)" : pct > 65 ? "var(--gcc-amber)" : "var(--gcc-blue)" }} /></div> : null}
+                </div>
+              );
+            })}
+          </div>
+        </section>
       ) : null}
       <section style={aiPanel}>
         <div style={chip}>AI command brief</div>

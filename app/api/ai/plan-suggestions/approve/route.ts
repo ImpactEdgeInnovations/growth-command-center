@@ -3,6 +3,7 @@ import { apiError } from "@/src/lib/api/response";
 import { createSupabaseAdminClient } from "@/src/lib/supabase/admin";
 import { planSuggestionApproveSchema } from "@/src/lib/validators/workspace";
 import { assertWorkspaceAccess, canWriteWorkspace } from "@/src/lib/workspace/access";
+import { assertUsageLimit } from "@/src/lib/workspace/usage-limits";
 
 export async function POST(request: Request) {
   const session = await getSessionFromCookies();
@@ -14,6 +15,18 @@ export async function POST(request: Request) {
   const access = await assertWorkspaceAccess(parsed.data.workspaceId, session);
   if (!access.ok) return apiError("Workspace access denied.", 403, "FORBIDDEN");
   if (!canWriteWorkspace(access.role)) return apiError("View-only teammates cannot change this workspace.", 403, "READ_ONLY_ROLE");
+  if (parsed.data.targets.length) {
+    const limit = await assertUsageLimit(parsed.data.workspaceId, "targets", parsed.data.targets.length);
+    if (!limit.ok) return apiError(limit.error, limit.status, limit.code);
+  }
+  if (parsed.data.milestones.length) {
+    const limit = await assertUsageLimit(parsed.data.workspaceId, "milestones", parsed.data.milestones.length);
+    if (!limit.ok) return apiError(limit.error, limit.status, limit.code);
+  }
+  if (parsed.data.tasks.length) {
+    const limit = await assertUsageLimit(parsed.data.workspaceId, "tasks", parsed.data.tasks.length);
+    if (!limit.ok) return apiError(limit.error, limit.status, limit.code);
+  }
 
   const supabase = createSupabaseAdminClient();
   const { data: plan } = await supabase

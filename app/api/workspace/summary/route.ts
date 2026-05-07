@@ -1,6 +1,7 @@
 import { getSessionFromCookies } from "@/src/lib/auth/session";
 import { createSupabaseAdminClient } from "@/src/lib/supabase/admin";
 import { apiError } from "@/src/lib/api/response";
+import { getWorkspaceUsageSnapshot } from "@/src/lib/workspace/usage-limits";
 
 export async function GET(request: Request) {
   const session = await getSessionFromCookies();
@@ -48,10 +49,12 @@ export async function GET(request: Request) {
     supabase.from("marketing_activities").select("*").eq("workspace_id", workspaceId).order("activity_date", { ascending: false }).limit(8),
     supabase.from("weekly_reviews").select("*").eq("workspace_id", workspaceId).order("week_start", { ascending: false }).limit(6),
   ]);
+  const usage = await getWorkspaceUsageSnapshot(workspaceId);
 
   return Response.json({
     ok: true,
     workspace: workspace.data || null,
+    usage,
     counts: {
       plans: plans.data?.length || 0,
       targets: targets.data?.length || 0,

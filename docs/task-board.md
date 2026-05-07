@@ -45,6 +45,6 @@
 - [x] GCC-23: Add member invites UI/API.
 - [x] GCC-24: Add workspace role permissions UI.
 - [x] GCC-25: Add audit log table.
-- [ ] GCC-26: Add usage limits.
+- [x] GCC-26: Add usage limits.
 - [ ] GCC-27: Add billing plan hooks.
 - [x] GCC-28: Add super-admin subscription toggle UI.

@@ -29,6 +29,8 @@ The interface should feel AI-native and modern: blue command-center palette, cle
 
 Super admin can keep subscriptions off during early beta.
 Super admin can manually set workspace plan, subscription status, billing notes, and suspension state from the owner panel.
+Plan limits are enforced server-side for team seats, plans, targets, milestones, tasks, investor records, marketing logs, weekly reviews, and AI briefs.
+The workspace dashboard shows usage against limits so founders know when they are approaching an upgrade moment.
 Later subscription plans can be:
 
 - Trial: limited workspace and AI use
