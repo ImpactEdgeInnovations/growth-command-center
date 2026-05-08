@@ -55,6 +55,7 @@ AI can:
 - produce research-style notes from supplied context
 - research likely investors, partners, companies, or customer prospects from the web with visible source links
 - prepopulate outreach records only after the user selects and approves the researched prospects
+- act like a lightweight growth operator by suggesting who to contact, weekly outreach targets, next tasks, first-message angles, and feedback questions
 
 AI cannot:
 
@@ -78,6 +79,7 @@ AI cannot:
 9. User reviews proposed targets/tasks/outreach records and deselects anything they do not want.
 10. User clicks approve to save selected items.
 11. User can also run AI prospect research from the plan builder. AI returns a sourced draft list first; selected rows can then be saved directly to the outreach table or added back into plan context.
+12. Prospect research can also save selected weekly outreach targets and next tasks, so research turns into execution rather than a static list.
 
 PDF/DOCX extraction is intentionally queued as a later phase so the first upload release stays lightweight and does not introduce a heavy document-processing runtime.
 

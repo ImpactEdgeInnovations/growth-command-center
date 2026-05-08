@@ -151,8 +151,32 @@ export const prospectResearchApproveSchema = z.object({
         notes: z.string().trim().max(1200).optional(),
       })
     )
-    .min(1)
-    .max(12),
+    .max(12)
+    .default([]),
+  targets: z
+    .array(
+      z.object({
+        label: z.string().trim().min(2).max(160),
+        metricKey: z.string().trim().max(80).optional(),
+        targetValue: z.coerce.number().min(0).default(0),
+        notes: z.string().trim().max(1200).optional(),
+      })
+    )
+    .max(5)
+    .default([]),
+  tasks: z
+    .array(
+      z.object({
+        title: z.string().trim().min(2).max(180),
+        lane: z.enum(["founder", "marketing", "sales", "investor", "ops", "content", "growth"]).default("growth"),
+        priority: z.enum(["low", "medium", "high", "urgent"]).default("medium"),
+        notes: z.string().trim().max(1200).optional(),
+      })
+    )
+    .max(10)
+    .default([]),
+}).refine((data) => data.prospects.length + data.targets.length + data.tasks.length > 0, {
+  message: "Choose at least one researched item before saving.",
 });
 
 export const superAdminWorkspaceUpdateSchema = z.object({

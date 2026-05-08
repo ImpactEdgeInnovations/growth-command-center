@@ -42,6 +42,7 @@
 - [x] GCC-32: Add Markdown/text business-context upload to AI plan builder.
 - [x] GCC-33: Extract investor/company outreach records from AI plan suggestions.
 - [x] GCC-34: Add AI web research for prospects with source review and human-approved outreach save.
+- [x] GCC-35: Upgrade AI research into an operator plan: prospects, weekly outreach targets, tasks, email angles, and feedback questions.
 
 ## Phase 4 — SaaS Readiness
 

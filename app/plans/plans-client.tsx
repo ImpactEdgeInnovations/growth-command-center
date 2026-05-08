@@ -32,6 +32,10 @@ type PlanSuggestions = {
 type ProspectResearch = {
   summary: string;
   prospects: PlanSuggestions["investors"];
+  outreachTargets: PlanSuggestions["targets"];
+  outreachTasks: PlanSuggestions["tasks"];
+  feedbackQuestions: Array<{ question: string; askTo?: string; whyAsk?: string }>;
+  emailAngles: Array<{ audience?: string; subject: string; message: string }>;
   sources: Array<{ title?: string; url: string }>;
 };
 
@@ -81,6 +85,8 @@ export default function PlansClient() {
   const [researchModel, setResearchModel] = useState("");
   const [researchBriefId, setResearchBriefId] = useState("");
   const [researchSelection, setResearchSelection] = useState<boolean[]>([]);
+  const [researchTargetSelection, setResearchTargetSelection] = useState<boolean[]>([]);
+  const [researchTaskSelection, setResearchTaskSelection] = useState<boolean[]>([]);
   const [title, setTitle] = useState("");
   const [text, setText] = useState("");
   const [uploadTitle, setUploadTitle] = useState("");
@@ -162,7 +168,7 @@ export default function PlansClient() {
   };
 
   const researchProspects = async () => {
-    setBusy("research"); setMessage(""); setProspectResearch(null); setResearchBriefId(""); setResearchSelection([]);
+    setBusy("research"); setMessage(""); setProspectResearch(null); setResearchBriefId(""); setResearchSelection([]); setResearchTargetSelection([]); setResearchTaskSelection([]);
     try {
       const response = await fetch("/api/ai/research-prospects", {
         method: "POST",
@@ -171,11 +177,22 @@ export default function PlansClient() {
       });
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(payload.error || "Could not research prospects.");
-      setProspectResearch(payload.research);
+      const research = {
+        summary: payload.research?.summary || "AI research draft is ready.",
+        prospects: payload.research?.prospects || [],
+        outreachTargets: payload.research?.outreachTargets || [],
+        outreachTasks: payload.research?.outreachTasks || [],
+        feedbackQuestions: payload.research?.feedbackQuestions || [],
+        emailAngles: payload.research?.emailAngles || [],
+        sources: payload.research?.sources || [],
+      };
+      setProspectResearch(research);
       setResearchModel(payload.model || "");
       setResearchBriefId(payload.brief?.id || "");
-      setResearchSelection((payload.research?.prospects || []).map(() => true));
-      setMessage("Research draft is ready. Review sources, then save selected prospects to the outreach table or add them to the plan context.");
+      setResearchSelection(research.prospects.map(() => true));
+      setResearchTargetSelection(research.outreachTargets.map(() => true));
+      setResearchTaskSelection(research.outreachTasks.map(() => true));
+      setMessage("Growth operator draft is ready. Review who to contact, weekly targets, tasks, email angles, and feedback questions before saving.");
     } catch (err: any) {
       setMessage(err.message || "Could not research prospects.");
     } finally {
@@ -191,33 +208,66 @@ export default function PlansClient() {
       return;
     }
     const selectedProspects = prospectResearch.prospects.filter((_, index) => researchSelection[index]);
-    if (!selectedProspects.length) {
-      setMessage("Select at least one prospect before adding research to the outreach field.");
+    const selectedTargets = prospectResearch.outreachTargets.filter((_, index) => researchTargetSelection[index]);
+    const selectedTasks = prospectResearch.outreachTasks.filter((_, index) => researchTaskSelection[index]);
+    if (!selectedProspects.length && !selectedTargets.length && !selectedTasks.length) {
+      setMessage("Select at least one prospect, target, or task before adding research to the plan context.");
       return;
     }
-    const table = [
-      "| Company / Investor | Contact | Email | Stage | Source | Notes |",
-      "| --- | --- | --- | --- | --- | --- |",
-      ...selectedProspects.map((item) =>
-        `| ${cleanCell(item.companyName || item.investorName)} | ${cleanCell(item.contactName)} | ${cleanCell(item.contactEmail)} | ${cleanCell(item.stage || "identified")} | ${cleanCell(item.source)} | ${cleanCell(item.notes)} |`
-      ),
-    ].join("\n");
-    setDraftField("outreachContext", [draftBrief.outreachContext, `\n\n## AI researched prospects\n${table}`].filter(Boolean).join("\n").slice(0, 8000));
+    const sections = [
+      selectedProspects.length
+        ? [
+            "## AI researched prospects",
+            "| Company / Investor | Contact | Email | Stage | Source | Notes |",
+            "| --- | --- | --- | --- | --- | --- |",
+            ...selectedProspects.map((item) =>
+              `| ${cleanCell(item.companyName || item.investorName)} | ${cleanCell(item.contactName)} | ${cleanCell(item.contactEmail)} | ${cleanCell(item.stage || "identified")} | ${cleanCell(item.source)} | ${cleanCell(item.notes)} |`
+            ),
+          ].join("\n")
+        : "",
+      selectedTargets.length
+        ? [
+            "## AI weekly outreach targets",
+            ...selectedTargets.map((target) => `- ${target.label}: ${target.targetValue}${target.metricKey ? ` (${target.metricKey})` : ""}${target.notes ? ` — ${target.notes}` : ""}`),
+          ].join("\n")
+        : "",
+      selectedTasks.length
+        ? [
+            "## AI outreach tasks",
+            ...selectedTasks.map((task) => `- [${task.priority}] ${task.title}${task.notes ? ` — ${task.notes}` : ""}`),
+          ].join("\n")
+        : "",
+      prospectResearch.feedbackQuestions.length
+        ? [
+            "## Feedback questions to ask",
+            ...prospectResearch.feedbackQuestions.map((item) => `- ${item.question}${item.askTo ? ` (${item.askTo})` : ""}${item.whyAsk ? ` — ${item.whyAsk}` : ""}`),
+          ].join("\n")
+        : "",
+    ].filter(Boolean).join("\n\n");
+    setDraftField("outreachContext", [draftBrief.outreachContext, sections].filter(Boolean).join("\n\n").slice(0, 8000));
     setMessage("Research added to the outreach field. You can edit it before drafting or saving anything.");
   };
 
   const toggleResearchSelection = (index: number) => {
     setResearchSelection((current) => current.map((checked, itemIndex) => (itemIndex === index ? !checked : checked)));
   };
+  const toggleResearchTargetSelection = (index: number) => {
+    setResearchTargetSelection((current) => current.map((checked, itemIndex) => (itemIndex === index ? !checked : checked)));
+  };
+  const toggleResearchTaskSelection = (index: number) => {
+    setResearchTaskSelection((current) => current.map((checked, itemIndex) => (itemIndex === index ? !checked : checked)));
+  };
 
   const saveResearchToOutreach = async () => {
-    if (!prospectResearch?.prospects?.length) {
-      setMessage("No research prospects to save yet.");
+    if (!prospectResearch) {
+      setMessage("No AI research to save yet.");
       return;
     }
     const selectedProspects = prospectResearch.prospects.filter((_, index) => researchSelection[index]);
-    if (!selectedProspects.length) {
-      setMessage("Select at least one prospect before saving to outreach.");
+    const selectedTargets = prospectResearch.outreachTargets.filter((_, index) => researchTargetSelection[index]);
+    const selectedTasks = prospectResearch.outreachTasks.filter((_, index) => researchTaskSelection[index]);
+    if (!selectedProspects.length && !selectedTargets.length && !selectedTasks.length) {
+      setMessage("Select at least one prospect, target, or task before saving.");
       return;
     }
     setBusy("saveResearch"); setMessage("");
@@ -225,13 +275,15 @@ export default function PlansClient() {
       const response = await fetch("/api/ai/research-prospects/approve", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ workspaceId, briefId: researchBriefId || null, prospects: selectedProspects }),
+        body: JSON.stringify({ workspaceId, briefId: researchBriefId || null, prospects: selectedProspects, targets: selectedTargets, tasks: selectedTasks }),
       });
       const payload = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(payload.error || "Could not save researched prospects.");
-      setMessage(`Saved ${payload.saved?.length || 0} researched prospect${payload.saved?.length === 1 ? "" : "s"} to the outreach table. You can track follow-ups on the dashboard.`);
+      if (!response.ok) throw new Error(payload.error || "Could not save researched action plan.");
+      setMessage(`Saved research plan: ${payload.saved?.prospects?.length || 0} outreach records, ${payload.saved?.targets?.length || 0} targets, ${payload.saved?.tasks?.length || 0} tasks.`);
       setProspectResearch(null);
       setResearchSelection([]);
+      setResearchTargetSelection([]);
+      setResearchTaskSelection([]);
       setResearchBriefId("");
       loadWorkspace();
     } catch (err: any) {
@@ -406,15 +458,16 @@ export default function PlansClient() {
           />
         </label>
         <p style={{ ...muted, margin: "8px 0 0", fontSize: 13 }}>
-          AI can research prospects from the web, show sources, and prepopulate the outreach table after you approve. It will not invent verified email addresses.
+          AI can research who to talk to, suggest weekly email/meeting targets, draft first-message angles, and give feedback questions. It will not invent verified email addresses.
         </p>
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 12 }}>
           <button type="button" disabled={!!busy || !workspaceId || !draftBrief.companyName || !draftBrief.businessType || !draftBrief.topGoal} onClick={researchProspects} style={secondaryButton}>
             {busy === "research" ? "Researching..." : "Research prospects with AI"}
           </button>
-          {prospectResearch?.prospects?.length ? (
+          {prospectResearch &&
+          prospectResearch.prospects.length + prospectResearch.outreachTargets.length + prospectResearch.outreachTasks.length > 0 ? (
             <>
-              <button type="button" disabled={!!busy} onClick={saveResearchToOutreach} style={button}>{busy === "saveResearch" ? "Saving..." : "Save selected to outreach table"}</button>
+              <button type="button" disabled={!!busy} onClick={saveResearchToOutreach} style={button}>{busy === "saveResearch" ? "Saving..." : "Save selected action plan"}</button>
               <button type="button" disabled={!!busy} onClick={appendResearchToOutreachContext} style={secondaryButton}>Use selected in plan context</button>
             </>
           ) : null}
@@ -424,8 +477,22 @@ export default function PlansClient() {
             <strong style={{ color: "var(--gcc-navy)" }}>AI research draft</strong>
             <p style={{ ...muted, margin: "6px 0 10px" }}>{prospectResearch.summary}</p>
             {researchModel ? <p style={{ ...muted, fontSize: 12 }}>Model: {researchModel} · review before use</p> : null}
+            <div style={{ display: "grid", gap: 10, gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", margin: "12px 0" }}>
+              {[
+                ["Prospects", prospectResearch.prospects.length],
+                ["Weekly targets", prospectResearch.outreachTargets.length],
+                ["Next tasks", prospectResearch.outreachTasks.length],
+                ["Feedback prompts", prospectResearch.feedbackQuestions.length],
+              ].map(([title, value]) => (
+                <div key={title} style={{ border: "1px solid rgba(8,58,99,.1)", borderRadius: 18, padding: 12, background: "rgba(248,252,255,.9)" }}>
+                  <div style={{ color: "var(--gcc-navy)", fontWeight: 900, fontSize: 20 }}>{value}</div>
+                  <div style={{ ...muted, fontSize: 12, lineHeight: 1.35 }}>{title}</div>
+                </div>
+              ))}
+            </div>
             {prospectResearch.prospects.length ? (
               <div style={{ overflowX: "auto" }}>
+                <strong style={{ color: "var(--gcc-navy)", fontSize: 14 }}>Who to talk to first</strong>
                 <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 720 }}>
                   <thead>
                     <tr>
@@ -451,6 +518,65 @@ export default function PlansClient() {
                 </table>
               </div>
             ) : <p style={muted}>No verified prospects returned. Add known targets manually or broaden the market/context.</p>}
+            {prospectResearch.outreachTargets.length ? (
+              <div style={{ marginTop: 18 }}>
+                <strong style={{ color: "var(--gcc-navy)", fontSize: 14 }}>Targets to hit this week</strong>
+                <div style={{ display: "grid", gap: 10, gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", marginTop: 10 }}>
+                  {prospectResearch.outreachTargets.map((target, index) => (
+                    <label key={`${target.label}-${index}`} style={{ display: "flex", gap: 10, alignItems: "flex-start", border: "1px solid rgba(8,58,99,.1)", borderRadius: 18, padding: 12, background: "rgba(255,255,255,.78)" }}>
+                      <input type="checkbox" checked={researchTargetSelection[index] ?? true} onChange={() => toggleResearchTargetSelection(index)} />
+                      <span>
+                        <strong style={{ color: "var(--gcc-navy)" }}>{target.targetValue} · {target.label}</strong>
+                        <span style={{ ...muted, display: "block", fontSize: 13 }}>{target.notes || target.metricKey || "Track this every week."}</span>
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+            {prospectResearch.outreachTasks.length ? (
+              <div style={{ marginTop: 18 }}>
+                <strong style={{ color: "var(--gcc-navy)", fontSize: 14 }}>What to do next</strong>
+                <div style={{ display: "grid", gap: 8, marginTop: 10 }}>
+                  {prospectResearch.outreachTasks.map((task, index) => (
+                    <label key={`${task.title}-${index}`} style={{ display: "flex", gap: 10, alignItems: "flex-start", border: "1px solid rgba(8,58,99,.1)", borderRadius: 16, padding: 11, background: "rgba(255,255,255,.72)" }}>
+                      <input type="checkbox" checked={researchTaskSelection[index] ?? true} onChange={() => toggleResearchTaskSelection(index)} />
+                      <span>
+                        <strong style={{ color: "var(--gcc-ink)" }}>{task.title}</strong>
+                        <span style={{ ...muted, display: "block", fontSize: 13 }}>{task.lane} · {task.priority}{task.notes ? ` · ${task.notes}` : ""}</span>
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+            {prospectResearch.emailAngles.length ? (
+              <div style={{ marginTop: 18 }}>
+                <strong style={{ color: "var(--gcc-navy)", fontSize: 14 }}>First email/message angles</strong>
+                <div style={{ display: "grid", gap: 10, gridTemplateColumns: "repeat(auto-fit,minmax(260px,1fr))", marginTop: 10 }}>
+                  {prospectResearch.emailAngles.map((angle, index) => (
+                    <div key={`${angle.subject}-${index}`} style={{ border: "1px solid rgba(11,142,216,.16)", borderRadius: 18, padding: 13, background: "rgba(232,247,255,.45)" }}>
+                      <div style={{ ...muted, fontSize: 12 }}>{angle.audience || "General outreach"}</div>
+                      <strong style={{ color: "var(--gcc-navy)", display: "block", marginTop: 4 }}>Subject: {angle.subject}</strong>
+                      <p style={{ ...muted, fontSize: 13, marginBottom: 0 }}>{angle.message}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+            {prospectResearch.feedbackQuestions.length ? (
+              <div style={{ marginTop: 18 }}>
+                <strong style={{ color: "var(--gcc-navy)", fontSize: 14 }}>Feedback questions to ask after they reply</strong>
+                <div style={{ display: "grid", gap: 8, marginTop: 10 }}>
+                  {prospectResearch.feedbackQuestions.map((item, index) => (
+                    <div key={`${item.question}-${index}`} style={{ borderLeft: "4px solid var(--gcc-blue)", padding: "8px 12px", background: "rgba(248,252,255,.88)", borderRadius: 12 }}>
+                      <strong style={{ color: "var(--gcc-ink)" }}>{item.question}</strong>
+                      <p style={{ ...muted, fontSize: 13, margin: "4px 0 0" }}>{item.askTo ? `Ask: ${item.askTo}. ` : ""}{item.whyAsk || ""}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
             {prospectResearch.sources.length ? (
               <div style={{ marginTop: 12 }}>
                 <strong style={{ color: "var(--gcc-navy)", fontSize: 13 }}>Sources</strong>
