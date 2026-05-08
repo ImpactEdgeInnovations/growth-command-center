@@ -53,10 +53,13 @@ AI can:
 - summarize weekly reviews into wins, risks, and next actions
 - generate a dashboard command brief from current plans, tasks, investors, marketing, and weekly reviews
 - produce research-style notes from supplied context
+- research likely investors, partners, companies, or customer prospects from the web with visible source links
+- prepopulate outreach records only after the user selects and approves the researched prospects
 
 AI cannot:
 
 - send messages without approval
+- silently save researched prospects without human review
 - approve companies
 - change billing
 - delete audit history
@@ -74,6 +77,7 @@ AI cannot:
 8. AI can draft targets, milestones, team tasks, and investor/company outreach records from the saved plan.
 9. User reviews proposed targets/tasks/outreach records and deselects anything they do not want.
 10. User clicks approve to save selected items.
+11. User can also run AI prospect research from the plan builder. AI returns a sourced draft list first; selected rows can then be saved directly to the outreach table or added back into plan context.
 
 PDF/DOCX extraction is intentionally queued as a later phase so the first upload release stays lightweight and does not introduce a heavy document-processing runtime.
 

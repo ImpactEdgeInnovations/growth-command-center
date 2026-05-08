@@ -41,6 +41,7 @@
 - [x] GCC-31: Apply modern blue AI cockpit UI polish.
 - [x] GCC-32: Add Markdown/text business-context upload to AI plan builder.
 - [x] GCC-33: Extract investor/company outreach records from AI plan suggestions.
+- [x] GCC-34: Add AI web research for prospects with source review and human-approved outreach save.
 
 ## Phase 4 — SaaS Readiness
 

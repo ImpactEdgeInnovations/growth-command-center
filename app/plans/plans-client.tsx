@@ -29,6 +29,12 @@ type PlanSuggestions = {
   }>;
 };
 
+type ProspectResearch = {
+  summary: string;
+  prospects: PlanSuggestions["investors"];
+  sources: Array<{ title?: string; url: string }>;
+};
+
 type SuggestionSelection = {
   targets: boolean[];
   milestones: boolean[];
@@ -71,6 +77,10 @@ export default function PlansClient() {
     context: "",
   });
   const [contextFileName, setContextFileName] = useState("");
+  const [prospectResearch, setProspectResearch] = useState<ProspectResearch | null>(null);
+  const [researchModel, setResearchModel] = useState("");
+  const [researchBriefId, setResearchBriefId] = useState("");
+  const [researchSelection, setResearchSelection] = useState<boolean[]>([]);
   const [title, setTitle] = useState("");
   const [text, setText] = useState("");
   const [uploadTitle, setUploadTitle] = useState("");
@@ -83,7 +93,7 @@ export default function PlansClient() {
   const [selection, setSelection] = useState<SuggestionSelection>({ targets: [], milestones: [], tasks: [], investors: [] });
   const [briefId, setBriefId] = useState("");
   const [suggestionModel, setSuggestionModel] = useState("");
-  const [busy, setBusy] = useState<"draft" | "plan" | "upload" | "target" | "milestone" | "suggest" | "approve" | null>(null);
+  const [busy, setBusy] = useState<"draft" | "research" | "saveResearch" | "plan" | "upload" | "target" | "milestone" | "suggest" | "approve" | null>(null);
 
   const loadWorkspace = () => {
     fetch("/api/workspace/summary", { cache: "no-store" })
@@ -149,6 +159,86 @@ export default function PlansClient() {
       setMessage(`AI drafted a plan using ${payload.model}. Review it below, edit anything you want, then save it as a growth plan.`);
     } catch (err: any) { setMessage(err.message || "Could not draft growth plan."); }
     finally { setBusy(null); }
+  };
+
+  const researchProspects = async () => {
+    setBusy("research"); setMessage(""); setProspectResearch(null); setResearchBriefId(""); setResearchSelection([]);
+    try {
+      const response = await fetch("/api/ai/research-prospects", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ workspaceId, ...draftBrief }),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.error || "Could not research prospects.");
+      setProspectResearch(payload.research);
+      setResearchModel(payload.model || "");
+      setResearchBriefId(payload.brief?.id || "");
+      setResearchSelection((payload.research?.prospects || []).map(() => true));
+      setMessage("Research draft is ready. Review sources, then save selected prospects to the outreach table or add them to the plan context.");
+    } catch (err: any) {
+      setMessage(err.message || "Could not research prospects.");
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const cleanCell = (value?: string) => (value || "").replace(/\|/g, "/").replace(/\s+/g, " ").trim();
+
+  const appendResearchToOutreachContext = () => {
+    if (!prospectResearch?.prospects?.length) {
+      setMessage("No research prospects to add yet.");
+      return;
+    }
+    const selectedProspects = prospectResearch.prospects.filter((_, index) => researchSelection[index]);
+    if (!selectedProspects.length) {
+      setMessage("Select at least one prospect before adding research to the outreach field.");
+      return;
+    }
+    const table = [
+      "| Company / Investor | Contact | Email | Stage | Source | Notes |",
+      "| --- | --- | --- | --- | --- | --- |",
+      ...selectedProspects.map((item) =>
+        `| ${cleanCell(item.companyName || item.investorName)} | ${cleanCell(item.contactName)} | ${cleanCell(item.contactEmail)} | ${cleanCell(item.stage || "identified")} | ${cleanCell(item.source)} | ${cleanCell(item.notes)} |`
+      ),
+    ].join("\n");
+    setDraftField("outreachContext", [draftBrief.outreachContext, `\n\n## AI researched prospects\n${table}`].filter(Boolean).join("\n").slice(0, 8000));
+    setMessage("Research added to the outreach field. You can edit it before drafting or saving anything.");
+  };
+
+  const toggleResearchSelection = (index: number) => {
+    setResearchSelection((current) => current.map((checked, itemIndex) => (itemIndex === index ? !checked : checked)));
+  };
+
+  const saveResearchToOutreach = async () => {
+    if (!prospectResearch?.prospects?.length) {
+      setMessage("No research prospects to save yet.");
+      return;
+    }
+    const selectedProspects = prospectResearch.prospects.filter((_, index) => researchSelection[index]);
+    if (!selectedProspects.length) {
+      setMessage("Select at least one prospect before saving to outreach.");
+      return;
+    }
+    setBusy("saveResearch"); setMessage("");
+    try {
+      const response = await fetch("/api/ai/research-prospects/approve", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ workspaceId, briefId: researchBriefId || null, prospects: selectedProspects }),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.error || "Could not save researched prospects.");
+      setMessage(`Saved ${payload.saved?.length || 0} researched prospect${payload.saved?.length === 1 ? "" : "s"} to the outreach table. You can track follow-ups on the dashboard.`);
+      setProspectResearch(null);
+      setResearchSelection([]);
+      setResearchBriefId("");
+      loadWorkspace();
+    } catch (err: any) {
+      setMessage(err.message || "Could not save researched prospects.");
+    } finally {
+      setBusy(null);
+    }
   };
 
   const savePlan = async (event: FormEvent<HTMLFormElement>) => {
@@ -316,8 +406,63 @@ export default function PlansClient() {
           />
         </label>
         <p style={{ ...muted, margin: "8px 0 0", fontSize: 13 }}>
-          AI can prepopulate outreach records from real names/emails you provide. It will not invent verified email addresses.
+          AI can research prospects from the web, show sources, and prepopulate the outreach table after you approve. It will not invent verified email addresses.
         </p>
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 12 }}>
+          <button type="button" disabled={!!busy || !workspaceId || !draftBrief.companyName || !draftBrief.businessType || !draftBrief.topGoal} onClick={researchProspects} style={secondaryButton}>
+            {busy === "research" ? "Researching..." : "Research prospects with AI"}
+          </button>
+          {prospectResearch?.prospects?.length ? (
+            <>
+              <button type="button" disabled={!!busy} onClick={saveResearchToOutreach} style={button}>{busy === "saveResearch" ? "Saving..." : "Save selected to outreach table"}</button>
+              <button type="button" disabled={!!busy} onClick={appendResearchToOutreachContext} style={secondaryButton}>Use selected in plan context</button>
+            </>
+          ) : null}
+        </div>
+        {prospectResearch ? (
+          <div style={{ ...card, boxShadow: "none", marginTop: 14 }}>
+            <strong style={{ color: "var(--gcc-navy)" }}>AI research draft</strong>
+            <p style={{ ...muted, margin: "6px 0 10px" }}>{prospectResearch.summary}</p>
+            {researchModel ? <p style={{ ...muted, fontSize: 12 }}>Model: {researchModel} · review before use</p> : null}
+            {prospectResearch.prospects.length ? (
+              <div style={{ overflowX: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 720 }}>
+                  <thead>
+                    <tr>
+                      {["Use", "Company / Investor", "Contact", "Email", "Stage", "Notes"].map((heading) => (
+                        <th key={heading} style={{ textAlign: "left", color: "var(--gcc-navy)", borderBottom: "1px solid rgba(8,58,99,.12)", padding: "8px 6px", fontSize: 12 }}>{heading}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {prospectResearch.prospects.map((item, index) => (
+                      <tr key={`${item.investorName}-${index}`}>
+                        <td style={{ padding: "8px 6px" }}>
+                          <input aria-label={`Select ${item.companyName || item.investorName}`} type="checkbox" checked={researchSelection[index] ?? true} onChange={() => toggleResearchSelection(index)} />
+                        </td>
+                        <td style={{ padding: "8px 6px", color: "var(--gcc-ink)" }}>{item.companyName || item.investorName}</td>
+                        <td style={{ padding: "8px 6px", color: "var(--gcc-muted)" }}>{item.contactName || "Research needed"}</td>
+                        <td style={{ padding: "8px 6px", color: "var(--gcc-muted)" }}>{item.contactEmail || "Not verified"}</td>
+                        <td style={{ padding: "8px 6px", color: "var(--gcc-muted)" }}>{item.stage}</td>
+                        <td style={{ padding: "8px 6px", color: "var(--gcc-muted)" }}>{item.notes || item.source || ""}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : <p style={muted}>No verified prospects returned. Add known targets manually or broaden the market/context.</p>}
+            {prospectResearch.sources.length ? (
+              <div style={{ marginTop: 12 }}>
+                <strong style={{ color: "var(--gcc-navy)", fontSize: 13 }}>Sources</strong>
+                <div style={{ display: "grid", gap: 6, marginTop: 6 }}>
+                  {prospectResearch.sources.map((source) => (
+                    <a key={source.url} href={source.url} target="_blank" rel="noreferrer" style={{ color: "var(--gcc-blue)", fontSize: 13 }}>{source.title || source.url}</a>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+          </div>
+        ) : null}
         <label style={{ ...label, marginTop: 14 }}>Extra context<textarea style={{ ...input, minHeight: 120 }} value={draftBrief.context} onChange={(event) => setDraftField("context", event.target.value)} placeholder="Paste notes, constraints, current numbers, team capacity, budget, investor lists, customer/company tables, or weekly checklists..." /></label>
         <div style={{ marginTop: 14, border: "1px dashed rgba(11,142,216,.3)", borderRadius: 20, padding: 14, background: "rgba(232,247,255,.52)" }}>
           <label style={label}>

@@ -122,6 +122,39 @@ export const workspaceBriefSchema = z.object({
   workspaceId: z.string().uuid(),
 });
 
+export const prospectResearchSchema = z.object({
+  workspaceId: z.string().uuid(),
+  companyName: z.string().trim().min(2).max(160),
+  companyWebsite: z.string().trim().url().max(240).optional().or(z.literal("")),
+  businessType: z.string().trim().min(2).max(160),
+  topGoal: z.string().trim().min(8).max(600),
+  market: z.string().trim().max(240).optional(),
+  channels: z.string().trim().max(400).optional(),
+  outreachContext: z.string().trim().max(8000).optional(),
+});
+
+export const prospectResearchApproveSchema = z.object({
+  workspaceId: z.string().uuid(),
+  briefId: z.string().uuid().optional().nullable(),
+  prospects: z
+    .array(
+      z.object({
+        investorName: z.string().trim().min(2).max(180),
+        companyName: z.string().trim().max(180).optional(),
+        contactName: z.string().trim().max(120).optional(),
+        contactEmail: z.string().trim().email().max(180).optional().or(z.literal("")),
+        stage: z
+          .enum(["identified", "contacted", "warm", "meeting", "diligence", "committed", "passed"])
+          .default("identified"),
+        status: z.enum(["open", "follow_up", "warm", "closed", "archived"]).default("open"),
+        source: z.string().trim().max(240).optional(),
+        notes: z.string().trim().max(1200).optional(),
+      })
+    )
+    .min(1)
+    .max(12),
+});
+
 export const superAdminWorkspaceUpdateSchema = z.object({
   workspaceId: z.string().uuid(),
   status: z.enum(["approved", "suspended"]).default("approved"),
