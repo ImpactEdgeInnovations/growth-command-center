@@ -45,7 +45,7 @@ export async function POST(request: Request) {
     action: "ai_plan_draft_generated",
     entity_type: "ai_brief",
     entity_id: brief?.id || null,
-    details: { model: result.model, company_name: parsed.data.companyName },
+    details: { model: result.model, company_name: parsed.data.companyName, website: parsed.data.companyWebsite || null },
   });
 
   return Response.json({

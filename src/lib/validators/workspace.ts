@@ -10,11 +10,13 @@ export const planSchema = z.object({
 export const planDraftRequestSchema = z.object({
   workspaceId: z.string().uuid(),
   companyName: z.string().trim().min(2).max(160),
+  companyWebsite: z.string().trim().url().max(240).optional().or(z.literal("")),
   businessType: z.string().trim().min(2).max(160),
   stage: z.enum(["idea", "early", "growing", "fundraising", "scaling"]).default("early"),
   topGoal: z.string().trim().min(8).max(600),
   market: z.string().trim().max(240).optional(),
   channels: z.string().trim().max(400).optional(),
+  outreachContext: z.string().trim().max(8000).optional(),
   context: z.string().trim().max(12000).optional(),
 });
 

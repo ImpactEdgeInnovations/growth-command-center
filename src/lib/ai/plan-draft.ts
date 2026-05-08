@@ -10,19 +10,23 @@ export type AiPlanDraft = z.infer<typeof aiPlanDraftSchema>;
 
 function fallbackPlanDraft({
   companyName,
+  companyWebsite,
   businessType,
   stage,
   topGoal,
   market,
   channels,
+  outreachContext,
   context,
 }: {
   companyName: string;
+  companyWebsite?: string;
   businessType: string;
   stage: string;
   topGoal: string;
   market?: string;
   channels?: string;
+  outreachContext?: string;
   context?: string;
 }): AiPlanDraft {
   const title = `${companyName} Growth Plan`;
@@ -31,6 +35,7 @@ function fallbackPlanDraft({
     "",
     "## 1. Simple Goal",
     `${companyName} is a ${stage} ${businessType}. The immediate growth goal is: ${topGoal}.`,
+    companyWebsite?.trim() ? `Website to review during execution: ${companyWebsite.trim()}.` : "",
     "",
     "## 2. Target Market",
     market?.trim()
@@ -53,6 +58,9 @@ function fallbackPlanDraft({
     "- Keep a clean list of investor or partner prospects.",
     "- Track who was contacted, what they said, and the next follow-up date.",
     "- Prepare a short traction note that explains progress, risks, and next milestones.",
+    outreachContext?.trim()
+      ? ["", "## 5A. Outreach Inputs Supplied", outreachContext.trim()].join("\n")
+      : "",
     "",
     "## 6. Team Accountability",
     "- Assign each task to one owner.",
@@ -94,11 +102,13 @@ function parseDraft(text: string, fallback: AiPlanDraft) {
 
 export async function generateAiPlanDraft(input: {
   companyName: string;
+  companyWebsite?: string;
   businessType: string;
   stage: string;
   topGoal: string;
   market?: string;
   channels?: string;
+  outreachContext?: string;
   context?: string;
 }): Promise<{ draft: AiPlanDraft; model: string }> {
   const fallback = fallbackPlanDraft(input);
@@ -110,7 +120,10 @@ export async function generateAiPlanDraft(input: {
     "You are Growth Command Center's AI growth-plan builder.",
     "Create practical founder/operator growth plans in simple language.",
     "Use uploaded context when supplied, including Markdown tables, checklists, investor/company contacts, weekly targets, and notes.",
+    "Use the company website as context if provided, but do not claim to browse it unless content was supplied.",
     "The plan must be useful to convert into targets, milestones, team tasks, investor outreach, and weekly reviews.",
+    "If real prospect names, companies, contacts, or emails are supplied, preserve them in an Outreach Inputs section so the next AI step can prepopulate outreach records.",
+    "Do not invent verified email addresses. If contacts are missing, create research tasks instead of fake contact details.",
     "Do not claim to execute actions or contact anyone.",
     "Return only valid JSON with keys: title and planText.",
     "planText must be Markdown with sections: Goal, Market, Channels, First 30 Days, Investor/Partner Readiness, Team Accountability, Weekly Review Rhythm.",
@@ -130,11 +143,13 @@ export async function generateAiPlanDraft(input: {
           role: "user",
           content: [
             `Company: ${input.companyName}`,
+            `Website: ${input.companyWebsite || "Not supplied"}`,
             `Business type: ${input.businessType}`,
             `Stage: ${input.stage}`,
             `Top goal: ${input.topGoal}`,
             `Market: ${input.market || "Not supplied"}`,
             `Channels: ${input.channels || "Not supplied"}`,
+            `Known prospects / companies / contacts to preserve:\n${(input.outreachContext || "Not supplied").slice(0, 8000)}`,
             `Extra context and uploaded notes: ${(input.context || "Not supplied").slice(0, 12000)}`,
           ].join("\n"),
         },

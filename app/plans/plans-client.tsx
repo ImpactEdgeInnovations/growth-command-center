@@ -38,11 +38,13 @@ type SuggestionSelection = {
 
 type DraftBrief = {
   companyName: string;
+  companyWebsite: string;
   businessType: string;
   stage: "idea" | "early" | "growing" | "fundraising" | "scaling";
   topGoal: string;
   market: string;
   channels: string;
+  outreachContext: string;
   context: string;
 };
 
@@ -59,11 +61,13 @@ export default function PlansClient() {
   const [selectedPlanId, setSelectedPlanId] = useState("");
   const [draftBrief, setDraftBrief] = useState<DraftBrief>({
     companyName: "",
+    companyWebsite: "",
     businessType: "",
     stage: "early",
     topGoal: "",
     market: "",
     channels: "",
+    outreachContext: "",
     context: "",
   });
   const [contextFileName, setContextFileName] = useState("");
@@ -284,6 +288,7 @@ export default function PlansClient() {
         </p>
         <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))" }}>
           <label style={label}>Company name<input required style={input} value={draftBrief.companyName} onChange={(event) => setDraftField("companyName", event.target.value)} placeholder="Acme Foods" /></label>
+          <label style={label}>Website<input style={input} value={draftBrief.companyWebsite} onChange={(event) => setDraftField("companyWebsite", event.target.value)} placeholder="https://example.com" /></label>
           <label style={label}>Business type<input required style={input} value={draftBrief.businessType} onChange={(event) => setDraftField("businessType", event.target.value)} placeholder="B2B lending platform, restaurant, agency..." /></label>
           <label style={label}>
             Stage
@@ -301,6 +306,18 @@ export default function PlansClient() {
           <label style={label}>Target market<input style={input} value={draftBrief.market} onChange={(event) => setDraftField("market", event.target.value)} placeholder="Kenyan SMEs, lenders, founders, restaurants..." /></label>
           <label style={label}>Channels to use<input style={input} value={draftBrief.channels} onChange={(event) => setDraftField("channels", event.target.value)} placeholder="LinkedIn, WhatsApp, investor email, referrals..." /></label>
         </div>
+        <label style={{ ...label, marginTop: 14 }}>
+          Who should we talk to?
+          <textarea
+            style={{ ...input, minHeight: 100 }}
+            value={draftBrief.outreachContext}
+            onChange={(event) => setDraftField("outreachContext", event.target.value)}
+            placeholder={"Paste target companies, investors, partners, emails, or a small table. Example:\n| Company | Contact | Email | Notes |\n| Acme Capital | Jane Doe | jane@example.com | Warm intro needed |"}
+          />
+        </label>
+        <p style={{ ...muted, margin: "8px 0 0", fontSize: 13 }}>
+          AI can prepopulate outreach records from real names/emails you provide. It will not invent verified email addresses.
+        </p>
         <label style={{ ...label, marginTop: 14 }}>Extra context<textarea style={{ ...input, minHeight: 120 }} value={draftBrief.context} onChange={(event) => setDraftField("context", event.target.value)} placeholder="Paste notes, constraints, current numbers, team capacity, budget, investor lists, customer/company tables, or weekly checklists..." /></label>
         <div style={{ marginTop: 14, border: "1px dashed rgba(11,142,216,.3)", borderRadius: 20, padding: 14, background: "rgba(232,247,255,.52)" }}>
           <label style={label}>
