@@ -16,12 +16,24 @@ type PlanSuggestions = {
   targets: Array<{ label: string; metricKey?: string; targetValue: number; notes?: string }>;
   milestones: Array<{ title: string; description?: string; ownerName?: string }>;
   tasks: Array<{ title: string; lane: string; assigneeName?: string; priority: string; notes?: string }>;
+  investors: Array<{
+    investorName: string;
+    companyName?: string;
+    contactName?: string;
+    contactEmail?: string;
+    stage: string;
+    status: string;
+    source?: string;
+    lastResponse?: string;
+    notes?: string;
+  }>;
 };
 
 type SuggestionSelection = {
   targets: boolean[];
   milestones: boolean[];
   tasks: boolean[];
+  investors: boolean[];
 };
 
 type DraftBrief = {
@@ -38,6 +50,7 @@ const checkedAll = (suggestions: PlanSuggestions): SuggestionSelection => ({
   targets: suggestions.targets.map(() => true),
   milestones: suggestions.milestones.map(() => true),
   tasks: suggestions.tasks.map(() => true),
+  investors: suggestions.investors.map(() => true),
 });
 
 export default function PlansClient() {
@@ -53,6 +66,7 @@ export default function PlansClient() {
     channels: "",
     context: "",
   });
+  const [contextFileName, setContextFileName] = useState("");
   const [title, setTitle] = useState("");
   const [text, setText] = useState("");
   const [uploadTitle, setUploadTitle] = useState("");
@@ -62,7 +76,7 @@ export default function PlansClient() {
   const [milestoneTitle, setMilestoneTitle] = useState("");
   const [message, setMessage] = useState("");
   const [suggestions, setSuggestions] = useState<PlanSuggestions | null>(null);
-  const [selection, setSelection] = useState<SuggestionSelection>({ targets: [], milestones: [], tasks: [] });
+  const [selection, setSelection] = useState<SuggestionSelection>({ targets: [], milestones: [], tasks: [], investors: [] });
   const [briefId, setBriefId] = useState("");
   const [suggestionModel, setSuggestionModel] = useState("");
   const [busy, setBusy] = useState<"draft" | "plan" | "upload" | "target" | "milestone" | "suggest" | "approve" | null>(null);
@@ -86,6 +100,33 @@ export default function PlansClient() {
 
   const setDraftField = <K extends keyof DraftBrief>(key: K, value: DraftBrief[K]) => {
     setDraftBrief((current) => ({ ...current, [key]: value }));
+  };
+
+  const onDraftContextFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    if (file.size > 1024 * 1024) {
+      setMessage("Use a Markdown/text context file under 1MB for the AI business brief.");
+      event.currentTarget.value = "";
+      return;
+    }
+    const extensionOk = /\.(md|markdown|txt)$/i.test(file.name);
+    if (!extensionOk) {
+      setMessage("For AI context, upload .md, .markdown, or .txt. PDF/DOCX extraction comes later.");
+      event.currentTarget.value = "";
+      return;
+    }
+    const fileText = await file.text();
+    const clipped = fileText.slice(0, 9000);
+    setContextFileName(file.name);
+    setDraftBrief((current) => ({
+      ...current,
+      context: [
+        current.context,
+        `\n\n## Uploaded business context (${file.name})\n${clipped}`,
+      ].filter(Boolean).join("\n").slice(0, 12000),
+    }));
+    setMessage("Context file added. AI will use it to understand your plan, tables, checklists, contacts, and weekly targets.");
   };
 
   const generatePlanDraft = async (event: FormEvent<HTMLFormElement>) => {
@@ -186,6 +227,7 @@ export default function PlansClient() {
       targets: suggestions.targets.filter((_, index) => selection.targets[index]),
       milestones: suggestions.milestones.filter((_, index) => selection.milestones[index]),
       tasks: suggestions.tasks.filter((_, index) => selection.tasks[index]),
+      investors: suggestions.investors.filter((_, index) => selection.investors[index]),
     };
     try {
       const response = await fetch("/api/ai/plan-suggestions/approve", {
@@ -195,7 +237,7 @@ export default function PlansClient() {
       });
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(payload.error || "Could not approve suggestions.");
-      setMessage(`Approved and saved: ${payload.saved?.targets?.length || 0} targets, ${payload.saved?.milestones?.length || 0} milestones, ${payload.saved?.tasks?.length || 0} tasks.`);
+      setMessage(`Approved and saved: ${payload.saved?.targets?.length || 0} targets, ${payload.saved?.milestones?.length || 0} milestones, ${payload.saved?.tasks?.length || 0} tasks, ${payload.saved?.investors?.length || 0} outreach records.`);
       setSuggestions(null);
       setBriefId("");
       setSuggestionModel("");
@@ -229,7 +271,7 @@ export default function PlansClient() {
   };
 
   return (
-    <div style={{ display: "grid", gap: 18 }}>
+    <div style={{ display: "grid", gap: 20, width: "100%" }}>
       {!workspaceId ? <div style={card}>Login to an approved workspace before saving plans.</div> : null}
       {message ? <div style={card}>{message}</div> : null}
 
@@ -259,7 +301,17 @@ export default function PlansClient() {
           <label style={label}>Target market<input style={input} value={draftBrief.market} onChange={(event) => setDraftField("market", event.target.value)} placeholder="Kenyan SMEs, lenders, founders, restaurants..." /></label>
           <label style={label}>Channels to use<input style={input} value={draftBrief.channels} onChange={(event) => setDraftField("channels", event.target.value)} placeholder="LinkedIn, WhatsApp, investor email, referrals..." /></label>
         </div>
-        <label style={{ ...label, marginTop: 14 }}>Extra context<textarea style={{ ...input, minHeight: 95 }} value={draftBrief.context} onChange={(event) => setDraftField("context", event.target.value)} placeholder="Paste notes, constraints, current numbers, team capacity, budget, or investor context..." /></label>
+        <label style={{ ...label, marginTop: 14 }}>Extra context<textarea style={{ ...input, minHeight: 120 }} value={draftBrief.context} onChange={(event) => setDraftField("context", event.target.value)} placeholder="Paste notes, constraints, current numbers, team capacity, budget, investor lists, customer/company tables, or weekly checklists..." /></label>
+        <div style={{ marginTop: 14, border: "1px dashed rgba(11,142,216,.3)", borderRadius: 20, padding: 14, background: "rgba(232,247,255,.52)" }}>
+          <label style={label}>
+            Add a Markdown/text context file for AI
+            <input accept=".md,.markdown,.txt,text/plain,text/markdown" style={input} type="file" onChange={onDraftContextFileChange} />
+          </label>
+          <p style={{ ...muted, margin: "8px 0 0", fontSize: 13 }}>
+            Upload a business plan, weekly target checklist, investor/company table, or outreach notes. AI reads it as context only; saving still needs your approval.
+            {contextFileName ? ` Added: ${contextFileName}.` : ""}
+          </p>
+        </div>
         <button disabled={!!busy || !workspaceId} style={{ ...button, marginTop: 16 }}>{busy === "draft" ? "Drafting plan..." : "Draft plan with AI"}</button>
       </form>
 
@@ -288,8 +340,8 @@ export default function PlansClient() {
 
       <section style={aiPanel}>
         <div style={chip}>Human-approved AI</div>
-        <h2 style={{ color: "var(--gcc-navy)", marginBottom: 8, marginTop: 8 }}>Convert a saved plan into draft targets and tasks</h2>
-        <p style={muted}>AI prepares the first draft. You choose what to approve before anything becomes a real target, milestone, or task.</p>
+        <h2 style={{ color: "var(--gcc-navy)", marginBottom: 8, marginTop: 8 }}>Convert a saved plan into draft targets, tasks, and outreach</h2>
+        <p style={muted}>AI prepares the first draft from your plan, including companies/emails in tables where possible. You choose what to approve before anything becomes real workspace data.</p>
         <div style={{ display: "grid", gap: 12, gridTemplateColumns: "minmax(220px,1fr) auto", alignItems: "end" }}>
           <label style={label}>
             Saved plan
@@ -315,6 +367,7 @@ export default function PlansClient() {
             <SuggestionList title="Targets" items={suggestions.targets} selected={selection.targets} onToggle={(index) => toggleSuggestion("targets", index)} render={(item) => `${item.label} · target ${item.targetValue}${item.notes ? ` · ${item.notes}` : ""}`} />
             <SuggestionList title="Milestones" items={suggestions.milestones} selected={selection.milestones} onToggle={(index) => toggleSuggestion("milestones", index)} render={(item) => `${item.title}${item.description ? ` · ${item.description}` : ""}`} />
             <SuggestionList title="Team tasks" items={suggestions.tasks} selected={selection.tasks} onToggle={(index) => toggleSuggestion("tasks", index)} render={(item) => `${item.title} · ${item.lane} · ${item.priority}${item.notes ? ` · ${item.notes}` : ""}`} />
+            <SuggestionList title="Investor / company outreach" items={suggestions.investors} selected={selection.investors} onToggle={(index) => toggleSuggestion("investors", index)} render={(item) => `${item.investorName}${item.companyName ? ` · ${item.companyName}` : ""}${item.contactEmail ? ` · ${item.contactEmail}` : ""} · ${item.stage}${item.notes ? ` · ${item.notes}` : ""}`} />
             <button type="button" disabled={busy === "approve"} onClick={approveSuggestions} style={{ ...button, justifySelf: "start" }}>
               {busy === "approve" ? "Saving approved items..." : "Approve selected items"}
             </button>

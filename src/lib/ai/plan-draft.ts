@@ -109,6 +109,7 @@ export async function generateAiPlanDraft(input: {
   const system = [
     "You are Growth Command Center's AI growth-plan builder.",
     "Create practical founder/operator growth plans in simple language.",
+    "Use uploaded context when supplied, including Markdown tables, checklists, investor/company contacts, weekly targets, and notes.",
     "The plan must be useful to convert into targets, milestones, team tasks, investor outreach, and weekly reviews.",
     "Do not claim to execute actions or contact anyone.",
     "Return only valid JSON with keys: title and planText.",
@@ -134,7 +135,7 @@ export async function generateAiPlanDraft(input: {
             `Top goal: ${input.topGoal}`,
             `Market: ${input.market || "Not supplied"}`,
             `Channels: ${input.channels || "Not supplied"}`,
-            `Extra context: ${input.context || "Not supplied"}`,
+            `Extra context and uploaded notes: ${(input.context || "Not supplied").slice(0, 12000)}`,
           ].join("\n"),
         },
       ],

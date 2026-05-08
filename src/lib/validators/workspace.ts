@@ -15,7 +15,7 @@ export const planDraftRequestSchema = z.object({
   topGoal: z.string().trim().min(8).max(600),
   market: z.string().trim().max(240).optional(),
   channels: z.string().trim().max(400).optional(),
-  context: z.string().trim().max(4000).optional(),
+  context: z.string().trim().max(12000).optional(),
 });
 
 export const targetSchema = z.object({
@@ -182,6 +182,24 @@ export const planSuggestionApproveSchema = z.object({
     )
     .max(12)
     .default([]),
-}).refine((data) => data.targets.length + data.milestones.length + data.tasks.length > 0, {
+  investors: z
+    .array(
+      z.object({
+        investorName: z.string().trim().min(2).max(180),
+        companyName: z.string().trim().max(180).optional(),
+        contactName: z.string().trim().max(120).optional(),
+        contactEmail: z.string().trim().email().max(180).optional().or(z.literal("")),
+        stage: z
+          .enum(["identified", "contacted", "warm", "meeting", "diligence", "committed", "passed"])
+          .default("identified"),
+        status: z.enum(["open", "follow_up", "warm", "closed", "archived"]).default("open"),
+        source: z.string().trim().max(140).optional(),
+        lastResponse: z.string().trim().max(1200).optional(),
+        notes: z.string().trim().max(1200).optional(),
+      })
+    )
+    .max(20)
+    .default([]),
+}).refine((data) => data.targets.length + data.milestones.length + data.tasks.length + data.investors.length > 0, {
   message: "Approve at least one AI suggestion before saving.",
 });

@@ -46,7 +46,7 @@ export async function POST(request: Request) {
       workspace_id: parsed.data.workspaceId,
       growth_plan_id: parsed.data.growthPlanId,
       brief_type: "task_suggestions",
-      prompt: "Turn this growth plan into draft targets, milestones, and team tasks.",
+      prompt: "Turn this growth plan into draft targets, milestones, team tasks, and outreach records.",
       response: JSON.stringify(result.suggestions, null, 2),
       model: result.model,
       status: "draft",

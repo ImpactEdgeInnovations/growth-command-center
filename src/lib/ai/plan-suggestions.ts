@@ -39,13 +39,65 @@ export const planSuggestionsSchema = z.object({
     )
     .min(1)
     .max(12),
+  investors: z
+    .array(
+      z.object({
+        investorName: z.string().trim().min(2).max(180),
+        companyName: z.string().trim().max(180).optional(),
+        contactName: z.string().trim().max(120).optional(),
+        contactEmail: z.string().trim().email().max(180).optional().or(z.literal("")),
+        stage: z
+          .enum(["identified", "contacted", "warm", "meeting", "diligence", "committed", "passed"])
+          .default("identified"),
+        status: z.enum(["open", "follow_up", "warm", "closed", "archived"]).default("open"),
+        source: z.string().trim().max(140).optional(),
+        lastResponse: z.string().trim().max(1200).optional(),
+        notes: z.string().trim().max(1200).optional(),
+      })
+    )
+    .max(20)
+    .default([]),
 });
 
 export type PlanSuggestions = z.infer<typeof planSuggestionsSchema>;
 
+function extractOutreachRows(text: string) {
+  const rows = text
+    .split("\n")
+    .filter((line) => line.includes("|") && /@|investor|company|contact|email|fund|partner/i.test(line))
+    .map((line) =>
+      line
+        .split("|")
+        .map((cell) => cell.trim())
+        .filter(Boolean)
+    )
+    .filter((cells) => cells.length >= 2 && !cells.every((cell) => /^-+$/.test(cell.replace(/\s/g, ""))))
+    .filter((cells) => !/email|contact|company|investor|status|stage/i.test(cells.join(" ").toLowerCase()) || /@/.test(cells.join(" ")))
+    .slice(0, 10);
+
+  return rows
+    .map((cells, index) => {
+      const email = cells.find((cell) => /[^\s@]+@[^\s@]+\.[^\s@]+/.test(cell)) || "";
+      const nonEmailCells = cells.filter((cell) => cell !== email);
+      const first = nonEmailCells[0] || `Outreach prospect ${index + 1}`;
+      const second = nonEmailCells.find((cell) => cell !== first) || "";
+      return {
+        investorName: first,
+        companyName: second,
+        contactEmail: email,
+        stage: "identified" as const,
+        status: "open" as const,
+        source: "Imported from growth plan table/checklist",
+        notes: cells.join(" · "),
+      };
+    })
+    .filter((row) => row.investorName.length > 1);
+}
+
 const fallbackSuggestions = (title: string, text: string): PlanSuggestions => {
   const investorHeavy = /investor|fundraise|raise|vc|capital|pitch/i.test(text);
   const marketingHeavy = /marketing|content|social|linkedin|campaign|brand/i.test(text);
+  const extractedOutreach = extractOutreachRows(text);
   return {
     summary: `Draft suggestions for "${title}". Review the targets and tasks, edit anything that feels too broad, then approve only what your team can actually execute this week.`,
     targets: [
@@ -104,6 +156,21 @@ const fallbackSuggestions = (title: string, text: string): PlanSuggestions => {
         notes: "Prepare the message, but keep human approval before sending externally.",
       },
     ],
+    investors: extractedOutreach.length
+      ? extractedOutreach
+      : investorHeavy
+        ? [
+            {
+              investorName: "Build investor shortlist from your network",
+              companyName: "To be filled by founder",
+              contactEmail: "",
+              stage: "identified",
+              status: "open",
+              source: "AI fallback",
+              notes: "Replace this with real investor/company names, emails, and follow-up notes.",
+            },
+          ]
+        : [],
   };
 };
 
@@ -143,11 +210,13 @@ export async function generatePlanSuggestions({
   const system = [
     "You are Growth Command Center's AI planning assistant.",
     "Use simple founder/operator language.",
-    "Convert a business growth plan into draft targets, milestones, and team tasks.",
+    "Convert a business growth plan into draft targets, milestones, team tasks, and outreach records.",
+    "If the plan includes Markdown tables, checklists, company names, investor names, emails, or contacts, extract them into investors.",
     "Never approve or send anything. The human user must review and approve suggestions.",
-    "Return only valid JSON with keys: summary, targets, milestones, tasks.",
+    "Return only valid JSON with keys: summary, targets, milestones, tasks, investors.",
     "Targets must have label, metricKey, targetValue, notes.",
     "Tasks must have title, lane, priority, notes. Lane must be founder, marketing, sales, investor, ops, content, or growth.",
+    "Investors can also represent partner/customer/company outreach and must use investorName, companyName, contactName, contactEmail, stage, status, source, lastResponse, notes.",
   ].join(" ");
 
   const response = await fetch("https://api.openai.com/v1/responses", {

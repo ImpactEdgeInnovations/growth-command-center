@@ -39,6 +39,8 @@
 - [x] GCC-29: Add AI-first growth plan builder from business brief.
 - [x] GCC-30: Add dashboard AI command brief from live workspace activity.
 - [x] GCC-31: Apply modern blue AI cockpit UI polish.
+- [x] GCC-32: Add Markdown/text business-context upload to AI plan builder.
+- [x] GCC-33: Extract investor/company outreach records from AI plan suggestions.
 
 ## Phase 4 — SaaS Readiness
 

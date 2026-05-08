@@ -27,6 +27,10 @@ export async function POST(request: Request) {
     const limit = await assertUsageLimit(parsed.data.workspaceId, "tasks", parsed.data.tasks.length);
     if (!limit.ok) return apiError(limit.error, limit.status, limit.code);
   }
+  if (parsed.data.investors.length) {
+    const limit = await assertUsageLimit(parsed.data.workspaceId, "investors", parsed.data.investors.length);
+    if (!limit.ok) return apiError(limit.error, limit.status, limit.code);
+  }
 
   const supabase = createSupabaseAdminClient();
   const { data: plan } = await supabase
@@ -38,7 +42,7 @@ export async function POST(request: Request) {
   if (!plan) return apiError("Growth plan not found.", 404, "PLAN_NOT_FOUND");
 
   const now = new Date().toISOString();
-  const [targets, milestones, tasks] = await Promise.all([
+  const [targets, milestones, tasks, investors] = await Promise.all([
     parsed.data.targets.length
       ? supabase
           .from("growth_targets")
@@ -85,9 +89,28 @@ export async function POST(request: Request) {
           )
           .select("*")
       : Promise.resolve({ data: [], error: null }),
+    parsed.data.investors.length
+      ? supabase
+          .from("investor_outreach")
+          .insert(
+            parsed.data.investors.map((investor) => ({
+              workspace_id: parsed.data.workspaceId,
+              investor_name: investor.investorName,
+              company_name: investor.companyName || null,
+              contact_name: investor.contactName || null,
+              contact_email: investor.contactEmail || null,
+              stage: investor.stage,
+              status: investor.status,
+              source: investor.source || "AI plan import",
+              last_response: investor.lastResponse || null,
+              notes: investor.notes || null,
+            }))
+          )
+          .select("*")
+      : Promise.resolve({ data: [], error: null }),
   ]);
 
-  if (targets.error || milestones.error || tasks.error) {
+  if (targets.error || milestones.error || tasks.error || investors.error) {
     return apiError("Could not save one or more approved suggestions.", 500, "SUGGESTION_SAVE_FAILED");
   }
 
@@ -122,6 +145,7 @@ export async function POST(request: Request) {
       targets: targets.data?.length || 0,
       milestones: milestones.data?.length || 0,
       tasks: tasks.data?.length || 0,
+      investors: investors.data?.length || 0,
     },
   });
 
@@ -131,6 +155,7 @@ export async function POST(request: Request) {
       targets: targets.data || [],
       milestones: milestones.data || [],
       tasks: tasks.data || [],
+      investors: investors.data || [],
     },
   });
 }

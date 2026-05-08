@@ -65,14 +65,15 @@ AI cannot:
 ## Upload Flow
 
 1. User can start with AI by entering company, business type, stage, market, channels, and main goal.
-2. AI drafts a Markdown growth plan.
-3. User edits and saves the draft as the official workspace plan.
-4. User can also upload a Markdown/text growth plan or paste text manually.
-5. File uploads are stored privately in the Growth Command Center Supabase storage bucket.
-6. Text is extracted from `.md`, `.markdown`, and `.txt` files in the safe MVP phase.
-7. AI can draft targets, milestones, and team tasks from the saved plan.
-8. User reviews proposed targets/tasks and deselects anything they do not want.
-9. User clicks approve to save selected items.
+2. User can attach a Markdown/text business plan, weekly target checklist, investor/company table, or outreach notes as AI-only context.
+3. AI drafts a Markdown growth plan.
+4. User edits and saves the draft as the official workspace plan.
+5. User can also upload a Markdown/text growth plan or paste text manually.
+6. File uploads are stored privately in the Growth Command Center Supabase storage bucket.
+7. Text is extracted from `.md`, `.markdown`, and `.txt` files in the safe MVP phase.
+8. AI can draft targets, milestones, team tasks, and investor/company outreach records from the saved plan.
+9. User reviews proposed targets/tasks/outreach records and deselects anything they do not want.
+10. User clicks approve to save selected items.
 
 PDF/DOCX extraction is intentionally queued as a later phase so the first upload release stays lightweight and does not introduce a heavy document-processing runtime.
 
